@@ -89,9 +89,10 @@ export default function ParrotForm({onSubmit, initialValues}) {
                     onClose={() => setSpeciesVisible(false)}
                     value={speciesValue}
                     onConfirm={(v) => {
+                        const selectedId = v[0];  // v 是一个数组，比如 [1]
                         setSpeciesVisible(false);
-                        setSpeciesValue(v);
-                        form.setFieldsValue({speciesId: v});
+                        setSpeciesValue([selectedId]); // 显示用的仍是数组
+                        form.setFieldsValue({species: selectedId});
                     }}
                 />
             </Form.Item>
