@@ -1,19 +1,18 @@
 import { Form, Input, Button, Picker, Toast } from 'antd-mobile';
 import { useEffect, useState } from 'react';
-import { getSpeciesList, getCages } from '../api';
+import { getSpeciesList, getCagesByLocation } from '../api';
 
-export default function ParrotForm({ onSubmit, initialValues, disableCageSelection = false }) {
+export default function ParrotForm({ onSubmit, initialValues, disableCageSelection = false, forceSpecies }) {
     const [form] = Form.useForm();
     const [speciesList, setSpeciesList] = useState([]);
     const [speciesVisible, setSpeciesVisible] = useState(false);
     const [speciesValue, setSpeciesValue] = useState([]);
     const [genderVisible, setGenderVisible] = useState(false);
     const [genderValue, setGenderValue] = useState([]);
-    const [cages, setCages] = useState([]);
-    const [cageVisible, setCageVisible] = useState(false);
-    const [cageValue, setCageValue] = useState([]);
     const [filteredCages, setFilteredCages] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [cageValue, setCageValue] = useState([]);
+    const [cageVisible, setCageVisible] = useState(false);
 
     const genderOptions = [
         { label: '公', value: '公' },
@@ -22,78 +21,81 @@ export default function ParrotForm({ onSubmit, initialValues, disableCageSelecti
 
     useEffect(() => {
         console.log('ParrotForm mounted with initialValues:', initialValues);
+        fetchSpecies();
 
-        const fetchData = async () => {
-            setLoading(true);
-            try {
-                const [speciesRes, cagesRes] = await Promise.all([
-                    getSpeciesList(),
-                    getCages()
-                ]);
-                setSpeciesList(speciesRes.data || []);
-                setCages(cagesRes.data || []);
+        if (forceSpecies) {
+            setSpeciesValue([parseInt(forceSpecies)]);
+            form.setFieldsValue({ species: parseInt(forceSpecies) });
+        }
+    }, [forceSpecies]);
 
-                // 等数据加载完成后再设置 cageValue
-                if (initialValues?.cageId) {
-                    setCageValue([initialValues.cageId]);
-                    console.log('Set cageValue after data load:', [initialValues.cageId]);
+    useEffect(() => {
+        // 只有当选择了品种时才获取笼子列表
+        if (speciesValue.length > 0 && speciesValue[0]) {
+            fetchFilteredCages();
+        } else {
+            // 如果没有选择品种，清空笼子列表
+            setFilteredCages([]);
+        }
+    }, [speciesValue]);
 
-                }
-            } catch (error) {
-                Toast.show({
-                    content: '数据加载失败',
-                    icon: 'fail'
+    const fetchSpecies = async () => {
+        setLoading(true);
+        try {
+            const speciesRes = await getSpeciesList();
+            setSpeciesList(speciesRes.data || []);
+
+            if (initialValues) {
+                form.setFieldsValue({
+                    ...initialValues,
+                    species: initialValues.species,
+                    gender: initialValues.gender,
+                    cageId: initialValues.cageId,
                 });
-            } finally {
-                setLoading(false);
+                setSpeciesValue([initialValues.species]);
+                setGenderValue([initialValues.gender]);
+                setCageValue([initialValues.cageId]);
             }
-        };
-
-        fetchData();
-    }, [initialValues?.cageId]); // 添加 cageId 作为依赖
-
-    useEffect(() => {
-        if (initialValues && speciesList.length > 0 && cages.length > 0) {
-            form.setFieldsValue({
-                ...initialValues,
-                species: initialValues.species,
-                gender: initialValues.gender,
-                cageId: initialValues.cageId,
-            });
-            setSpeciesValue([initialValues.species]);
-            setGenderValue([initialValues.gender]);
-            setCageValue([initialValues.cageId]);
-
-            // 初始化过滤笼子
-            const filtered = cages.filter(cage =>
-                parseInt(cage.location) === initialValues.species
-            );
-            setFilteredCages(filtered);
+        } catch (error) {
+            Toast.show({ content: '获取品种列表失败', icon: 'fail' });
+        } finally {
+            setLoading(false);
         }
-    }, [initialValues, speciesList, cages]);
+    };
 
-    useEffect(() => {
-        if (!speciesValue[0]) return;
+    const fetchFilteredCages = async () => {
+        try {
+            setLoading(true);
+            const speciesId = speciesValue[0];
 
-        const filtered = cages.filter(cage =>
-            parseInt(cage.location) === speciesValue[0]
-        );
-        setFilteredCages(filtered);
-
-        // 检查当前选择的笼子是否属于新品种
-        if (cageValue[0]) {
-            const currentCage = cages.find(c => c.id === cageValue[0]);
-            if (!currentCage || parseInt(currentCage.location) !== speciesValue[0]) {
-                setCageValue([]);
-                form.setFieldsValue({ cageId: undefined });
+            // 确保品种ID有效
+            if (!speciesId) {
+                setFilteredCages([]);
+                return;
             }
+
+            const res = await getCagesByLocation(speciesId);
+            setFilteredCages(res.data || []);
+
+            if (initialValues?.cageId) {
+                const currentCage = res.data.find(c => c.id === initialValues.cageId);
+                if (!currentCage) {
+                    setCageValue([]);
+                    form.setFieldsValue({ cageId: undefined });
+                }
+            }
+        } catch (error) {
+            Toast.show({ content: '获取笼子列表失败', icon: 'fail' });
+            setFilteredCages([]);
+        } finally {
+            setLoading(false);
         }
-    }, [speciesValue, cages]);
+    };
 
     function renderCageDisplay() {
         if (!cageValue[0]) return '请选择笼子';
 
-        const cage = cages.find(c => c.id === cageValue[0]);
+        const cage = filteredCages.find(c => c.id === cageValue[0]);
         if (!cage) return '无效笼子';
 
         const speciesName = speciesList.find(s => s.id === parseInt(cage.location))?.name || '未知';
@@ -107,20 +109,15 @@ export default function ParrotForm({ onSubmit, initialValues, disableCageSelecti
                 id: initialValues?.id,
                 species: values.species,
                 gender: values.gender,
+                cageId: values.cageId,
             });
             form.resetFields();
             setSpeciesValue([]);
             setGenderValue([]);
             setCageValue([]);
-            Toast.show({
-                content: '操作成功',
-                icon: 'success'
-            });
+            Toast.show({ content: '操作成功', icon: 'success' });
         } catch (error) {
-            Toast.show({
-                content: '操作失败',
-                icon: 'fail'
-            });
+            Toast.show({ content: '操作失败', icon: 'fail' });
         }
     };
 
@@ -153,28 +150,29 @@ export default function ParrotForm({ onSubmit, initialValues, disableCageSelecti
                 label="品种"
                 rules={[{ required: true, message: '请选择品种' }]}
                 onClick={() => {
-                    if (loading || disableCageSelection) return;
-                    !loading && setSpeciesVisible(true)
-                }
-            }
+                    if (loading || disableCageSelection || forceSpecies) return;
+                    setSpeciesVisible(true);
+                }}
             >
-                <div style={disableCageSelection ? { color: '#999' } : {}}>
-                    {speciesList.find(species => species.id === speciesValue[0])?.name || '请选择品种'}
+                <div style={disableCageSelection || forceSpecies ? { color: '#999' } : {}}>
+                    {speciesList.find(s => s.id === speciesValue[0])?.name || '请选择品种'}
                 </div>
-                <Picker
-                    columns={[speciesList.map(species => ({
-                        label: species.name,
-                        value: species.id,
-                    }))]}
-                    visible={speciesVisible}
-                    onClose={() => setSpeciesVisible(false)}
-                    value={speciesValue}
-                    onConfirm={(v) => {
-                        setSpeciesVisible(false);
-                        setSpeciesValue(v);
-                        form.setFieldsValue({ species: v[0] });
-                    }}
-                />
+                {!forceSpecies && (
+                    <Picker
+                        columns={[speciesList.map(species => ({
+                            label: species.name,
+                            value: species.id,
+                        }))]}
+                        visible={speciesVisible}
+                        onClose={() => setSpeciesVisible(false)}
+                        value={speciesValue}
+                        onConfirm={(v) => {
+                            setSpeciesVisible(false);
+                            setSpeciesValue(v);
+                            form.setFieldsValue({ species: v[0] });
+                        }}
+                    />
+                )}
             </Form.Item>
 
             <Form.Item
