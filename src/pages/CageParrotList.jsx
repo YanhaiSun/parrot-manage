@@ -6,8 +6,9 @@ import {
     FloatingBubble,
     Dialog,
     SwipeAction,
-    ActionSheet,
-    Modal
+    Modal,
+    SpinLoading,
+    ErrorBlock,
 } from 'antd-mobile';
 import { useParams } from 'react-router-dom';
 import { AddOutline } from 'antd-mobile-icons';
@@ -17,7 +18,8 @@ import {
     getSpeciesList,
     addParrot,
     updateParrot,
-    deleteParrot
+    deleteParrot,
+    getCages,
 } from '../api';
 
 import ParrotForm from '../components/ParrotForm.jsx';
@@ -26,8 +28,11 @@ export default function CageParrotList() {
     const { cageId } = useParams();
     const [parrots, setParrots] = useState([]);
     const [speciesList, setSpeciesList] = useState([]);
+    const [cages, setCages] = useState([]);
     const [showForm, setShowForm] = useState(false);
     const [editParrot, setEditParrot] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [currentCage, setCurrentCage] = useState(null);
 
     const closeForm = () => {
         setShowForm(false);
@@ -35,34 +40,42 @@ export default function CageParrotList() {
     };
 
     useEffect(() => {
-        fetchParrots();
-        fetchSpecies();
-    }, []);
+        fetchAllData();
+    }, [cageId]);
 
-    const fetchParrots = async () => {
+    const fetchAllData = async () => {
+        setLoading(true);
         try {
-            const res = await getParrotsByCageId(cageId);
-            setParrots(res.data || []);
-        } catch {
-            Toast.show({ content: '获取鹦鹉失败' });
-        }
-    };
+            const [parrotsRes, speciesRes, cagesRes] = await Promise.all([
+                getParrotsByCageId(cageId),
+                getSpeciesList(),
+                getCages(),
+            ]);
+            setParrots(parrotsRes.data || []);
+            setSpeciesList(speciesRes.data || []);
+            setCages(cagesRes.data || []);
 
-    const fetchSpecies = async () => {
-        try {
-            const res = await getSpeciesList();
-            setSpeciesList(res.data || []);
+            // 获取当前笼子信息
+            const cage = cagesRes.data.find(c => c.id === parseInt(cageId));
+            setCurrentCage(cage);
         } catch {
-            Toast.show({ content: '获取品种失败' });
+            Toast.show({ content: '获取数据失败' });
+        } finally {
+            setLoading(false);
         }
     };
 
     const handleAddParrot = async (values) => {
         try {
-            await addParrot({ ...values, cageId: parseInt(cageId) });
+            await addParrot({
+                ...values,
+                cageId: parseInt(cageId),
+                // 确保使用当前笼子的品种
+                species: currentCage?.location ? parseInt(currentCage.location) : values.species
+            });
             Toast.show({ content: '添加成功' });
             closeForm();
-            fetchParrots();
+            fetchAllData();
         } catch {
             Toast.show({ content: '添加失败' });
         }
@@ -73,7 +86,7 @@ export default function CageParrotList() {
             await updateParrot(values.id, values);
             Toast.show({ content: '更新成功' });
             closeForm();
-            fetchParrots();
+            fetchAllData();
         } catch {
             Toast.show({ content: '更新失败' });
         }
@@ -86,11 +99,11 @@ export default function CageParrotList() {
                 try {
                     await deleteParrot(id);
                     Toast.show({ content: '删除成功' });
-                    fetchParrots();
+                    fetchAllData();
                 } catch {
                     Toast.show({ content: '删除失败' });
                 }
-            }
+            },
         });
     };
 
@@ -103,42 +116,62 @@ export default function CageParrotList() {
     return (
         <>
             <NavBar back="返回" onBack={() => window.history.back()}>
-                笼子内鹦鹉
+                {/*{currentCage?.cageCode || '笼子详情'}*/}
+                {currentCage ? `${speciesList.find(s => s.id === parseInt(currentCage.location))?.name || '未知'} - ${currentCage.cageCode}` : '笼子详情'}
             </NavBar>
 
-            <List header="鹦鹉列表">
-                {parrots.map((p) => (
-                    <SwipeAction
-                        key={p.id}
-                        rightActions={[
-                            {
-                                key: 'edit',
-                                text: '编辑',
-                                color: 'primary',
-                                onClick: () => {
-                                    setEditParrot(p);
-                                    setShowForm(true);
-                                }
-                            },
-                            {
-                                key: 'delete',
-                                text: '删除',
-                                color: 'danger',
-                                onClick: () => handleDeleteParrot(p.id)
-                            }
-                        ]}
-                    >
-                        <List.Item description={renderDescription(p)}>
-                            {p.ringNumber}
-                        </List.Item>
-                    </SwipeAction>
-                ))}
-            </List>
+            {loading ? (
+                <div
+                    style={{
+                        height: '100vh',
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                    }}
+                >
+                    <SpinLoading style={{ '--size': '48px' }} color="primary" />
+                </div>
+            ) : parrots.length === 0 ? (
+                <ErrorBlock
+                    status="empty"
+                    title={`${currentCage?.cageCode || '当前'}笼子中没有鹦鹉`}
+                    description="添加一个试试看吧"
+                />
+            ) : (
+                <List header="鹦鹉列表">
+                    {parrots.map((p) => (
+                        <SwipeAction
+                            key={p.id}
+                            rightActions={[
+                                {
+                                    key: 'edit',
+                                    text: '编辑',
+                                    color: 'primary',
+                                    onClick: () => {
+                                        setEditParrot(p);
+                                        setShowForm(true);
+                                    },
+                                },
+                                {
+                                    key: 'delete',
+                                    text: '删除',
+                                    color: 'danger',
+                                    onClick: () => handleDeleteParrot(p.id),
+                                },
+                            ]}
+                        >
+                            <List.Item description={renderDescription(p)}>
+                                {p.ringNumber}
+                            </List.Item>
+                        </SwipeAction>
+                    ))}
+                </List>
+            )}
 
             <FloatingBubble
                 style={{
                     '--initial-position-bottom': '80px',
-                    '--initial-position-right': '24px'
+                    '--initial-position-right': '24px',
                 }}
                 onClick={() => {
                     setEditParrot(null);
@@ -153,8 +186,15 @@ export default function CageParrotList() {
                 content={
                     <ParrotForm
                         onSubmit={editParrot ? handleUpdateParrot : handleAddParrot}
-                        initialValues={editParrot || { cageId: parseInt(cageId) }}
+                        initialValues={editParrot || {
+                            cageId: parseInt(cageId),
+                            // 默认使用当前笼子的品种
+                            species: currentCage?.location ? parseInt(currentCage.location) : undefined
+                        }}
+                        // 添加鹦鹉时禁用笼子选择，编辑时可以修改
                         disableCageSelection={!editParrot}
+                        // 强制使用当前笼子的品种（添加时）
+                        forceSpecies={!editParrot ? currentCage?.location : undefined}
                     />
                 }
                 closeOnMaskClick={true}

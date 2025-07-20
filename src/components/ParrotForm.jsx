@@ -1,6 +1,6 @@
-import {Form, Input, Button, Picker} from 'antd-mobile';
-import {useEffect, useState} from 'react';
-import {getSpeciesList, getCages} from '../api';
+import { Form, Input, Button, Picker, Toast } from 'antd-mobile';
+import { useEffect, useState } from 'react';
+import { getSpeciesList, getCages } from '../api';
 
 export default function ParrotForm({ onSubmit, initialValues, disableCageSelection = false }) {
     const [form] = Form.useForm();
@@ -12,22 +12,48 @@ export default function ParrotForm({ onSubmit, initialValues, disableCageSelecti
     const [cages, setCages] = useState([]);
     const [cageVisible, setCageVisible] = useState(false);
     const [cageValue, setCageValue] = useState([]);
-
+    const [filteredCages, setFilteredCages] = useState([]);
+    const [loading, setLoading] = useState(false);
 
     const genderOptions = [
-        {label: '雄性', value: '雄性'},
-        {label: '雌性', value: '雌性'},
+        { label: '公', value: '公' },
+        { label: '母', value: '母' },
     ];
 
     useEffect(() => {
-        getSpeciesList().then((res) => setSpeciesList(res.data));
-        fetchCages();
-    }, []);
+        console.log('ParrotForm mounted with initialValues:', initialValues);
+
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                const [speciesRes, cagesRes] = await Promise.all([
+                    getSpeciesList(),
+                    getCages()
+                ]);
+                setSpeciesList(speciesRes.data || []);
+                setCages(cagesRes.data || []);
+
+                // 等数据加载完成后再设置 cageValue
+                if (initialValues?.cageId) {
+                    setCageValue([initialValues.cageId]);
+                    console.log('Set cageValue after data load:', [initialValues.cageId]);
+
+                }
+            } catch (error) {
+                Toast.show({
+                    content: '数据加载失败',
+                    icon: 'fail'
+                });
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [initialValues?.cageId]); // 添加 cageId 作为依赖
 
     useEffect(() => {
-        const ready = speciesList.length > 0 && cages.length > 0 && initialValues;
-
-        if (ready) {
+        if (initialValues && speciesList.length > 0 && cages.length > 0) {
             form.setFieldsValue({
                 ...initialValues,
                 species: initialValues.species,
@@ -37,59 +63,102 @@ export default function ParrotForm({ onSubmit, initialValues, disableCageSelecti
             setSpeciesValue([initialValues.species]);
             setGenderValue([initialValues.gender]);
             setCageValue([initialValues.cageId]);
-            console.log('设置表单初始值:', {
-                ...initialValues,
-            }
+
+            // 初始化过滤笼子
+            const filtered = cages.filter(cage =>
+                parseInt(cage.location) === initialValues.species
             );
+            setFilteredCages(filtered);
         }
     }, [initialValues, speciesList, cages]);
 
+    useEffect(() => {
+        if (!speciesValue[0]) return;
+
+        const filtered = cages.filter(cage =>
+            parseInt(cage.location) === speciesValue[0]
+        );
+        setFilteredCages(filtered);
+
+        // 检查当前选择的笼子是否属于新品种
+        if (cageValue[0]) {
+            const currentCage = cages.find(c => c.id === cageValue[0]);
+            if (!currentCage || parseInt(currentCage.location) !== speciesValue[0]) {
+                setCageValue([]);
+                form.setFieldsValue({ cageId: undefined });
+            }
+        }
+    }, [speciesValue, cages]);
+
+    function renderCageDisplay() {
+        if (!cageValue[0]) return '请选择笼子';
+
+        const cage = cages.find(c => c.id === cageValue[0]);
+        if (!cage) return '无效笼子';
+
+        const speciesName = speciesList.find(s => s.id === parseInt(cage.location))?.name || '未知';
+        return `${speciesName}-${cage.cageCode}`;
+    }
 
     const handleFinish = async (values) => {
-        await onSubmit({
-            ...values,
-            id: initialValues?.id,
-            species: values.species,
-            gender: values.gender,
-        });
-        form.resetFields();
-        setSpeciesValue([]);
-        setGenderValue([]);
-        setCageValue([]);
-    };
-
-
-    const fetchCages = async () => {
         try {
-            const res = await getCages();
-            setCages(res.data);
+            await onSubmit({
+                ...values,
+                id: initialValues?.id,
+                species: values.species,
+                gender: values.gender,
+            });
+            form.resetFields();
+            setSpeciesValue([]);
+            setGenderValue([]);
+            setCageValue([]);
+            Toast.show({
+                content: '操作成功',
+                icon: 'success'
+            });
         } catch (error) {
-            console.error('获取笼子列表失败', error);
+            Toast.show({
+                content: '操作失败',
+                icon: 'fail'
+            });
         }
-    }
+    };
 
     return (
         <Form
             form={form}
             onFinish={handleFinish}
             layout="horizontal"
-            footer={<Button color="primary" block type="submit">提交</Button>}
+            footer={
+                <Button
+                    color="primary"
+                    block
+                    type="submit"
+                    loading={loading}
+                >
+                    提交
+                </Button>
+            }
         >
             <Form.Item
                 name="ringNumber"
                 label="脚环号"
-                rules={[{required: true}]}
+                rules={[{ required: true, message: '请输入脚环号' }]}
             >
-                <Input placeholder="请输入脚环号"/>
+                <Input placeholder="请输入脚环号" />
             </Form.Item>
 
             <Form.Item
                 name="species"
                 label="品种"
-                rules={[{required: true}]}
-                onClick={() => setSpeciesVisible(true)}
+                rules={[{ required: true, message: '请选择品种' }]}
+                onClick={() => {
+                    if (loading || disableCageSelection) return;
+                    !loading && setSpeciesVisible(true)
+                }
+            }
             >
-                <div>
+                <div style={disableCageSelection ? { color: '#999' } : {}}>
                     {speciesList.find(species => species.id === speciesValue[0])?.name || '请选择品种'}
                 </div>
                 <Picker
@@ -101,20 +170,18 @@ export default function ParrotForm({ onSubmit, initialValues, disableCageSelecti
                     onClose={() => setSpeciesVisible(false)}
                     value={speciesValue}
                     onConfirm={(v) => {
-                        const selectedId = v[0];
                         setSpeciesVisible(false);
-                        setSpeciesValue([selectedId]);       // Picker 用数组控制显示
-                        form.setFieldsValue({species: selectedId}); // ✅ 表单字段用 int
+                        setSpeciesValue(v);
+                        form.setFieldsValue({ species: v[0] });
                     }}
-
                 />
             </Form.Item>
 
             <Form.Item
                 name="gender"
                 label="性别"
-                rules={[{required: true}]}
-                onClick={() => setGenderVisible(true)}
+                rules={[{ required: true, message: '请选择性别' }]}
+                onClick={() => !loading && setGenderVisible(true)}
             >
                 <div>
                     {genderOptions.find(option => option.value === genderValue[0])?.label || '请选择性别'}
@@ -125,55 +192,54 @@ export default function ParrotForm({ onSubmit, initialValues, disableCageSelecti
                     onClose={() => setGenderVisible(false)}
                     value={genderValue}
                     onConfirm={(v) => {
-                        const selected = v[0];
                         setGenderVisible(false);
-                        setGenderValue([selected]);
-                        form.setFieldsValue({gender: selected}); // ✅ 字段是字符串，不是数组
+                        setGenderValue(v);
+                        form.setFieldsValue({ gender: v[0] });
                     }}
-
                 />
             </Form.Item>
-
-            {/*<Form.Item*/}
-            {/*    name="age"*/}
-            {/*    label="年龄"*/}
-            {/*    rules={[{required: true}]}*/}
-            {/*>*/}
-            {/*    <Input type="number" placeholder="请输入年龄"/>*/}
-            {/*</Form.Item>*/}
 
             <Form.Item
                 name="cageId"
                 label="所属笼子"
-                rules={[{ required: true }]}
+                rules={[{ required: !disableCageSelection, message: '请选择笼子' }]}
                 onClick={() => {
-                    if (!disableCageSelection) setCageVisible(true);
+                    if (loading || disableCageSelection) return;
+                    if (!speciesValue[0]) {
+                        Toast.show('请先选择品种');
+                        return;
+                    }
+                    if (filteredCages.length === 0) {
+                        Toast.show('该品种下没有可用的笼子');
+                        return;
+                    }
+                    setCageVisible(true);
                 }}
             >
                 <div style={disableCageSelection ? { color: '#999' } : {}}>
-                    {cages.find(cage => cage.id === cageValue[0])?.cageCode || '请选择笼子'}
+                    {renderCageDisplay()}
+                    {speciesValue[0] && filteredCages.length === 0 && ' (无可用笼子)'}
                 </div>
 
                 {!disableCageSelection && (
                     <Picker
-                        columns={[cages.map(cage => ({
-                            label: cage.cageCode,
-                            value: cage.id,
-                        }))]}
+                        columns={[
+                            filteredCages.map(cage => ({
+                                label: `${speciesList.find(s => s.id === parseInt(cage.location))?.name || '未知'} - ${cage.cageCode}`,
+                                value: cage.id,
+                            }))
+                        ]}
                         visible={cageVisible}
-                        onClose={() => setCageVisible(false)}
                         value={cageValue}
+                        onClose={() => setCageVisible(false)}
                         onConfirm={(v) => {
-                            const selectedId = v[0];
                             setCageVisible(false);
-                            setCageValue([selectedId]);
-                            form.setFieldsValue({ cageId: selectedId });
+                            setCageValue(v);
+                            form.setFieldsValue({ cageId: v[0] });
                         }}
                     />
                 )}
             </Form.Item>
-
-
         </Form>
     );
 }

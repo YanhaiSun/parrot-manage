@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-    baseURL: 'http://localhost:8080/api', // 后端接口地址
+    baseURL: 'https://suduan.top/parrot/api', // 后端接口地址
     timeout: 5000,
 });
 

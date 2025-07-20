@@ -3,73 +3,100 @@ import {
     Dialog,
     FloatingBubble,
     List,
-    NavBar,
     Toast,
     SwipeAction,
+    SpinLoading,
+    ErrorBlock,
 } from 'antd-mobile';
 import { AddOutline } from 'antd-mobile-icons';
 import { getSpeciesList, createSpecies, deleteSpecies } from '../api';
-import ParrotForm from "../components/ParrotForm.jsx";
 import SpeciesForm from "../components/SpeciesForm.jsx";
 
 export default function SpeciesManagement() {
     const [speciesList, setSpeciesList] = useState([]);
     const [dialogVisible, setDialogVisible] = useState(false);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         fetchSpecies();
     }, []);
 
     const fetchSpecies = async () => {
+        setLoading(true);
         try {
             const res = await getSpeciesList();
             setSpeciesList(res.data);
         } catch {
             Toast.show({ content: '获取品种失败' });
+        } finally {
+            setLoading(false);
         }
     };
 
     const handleAddSpecies = async (values) => {
+        setLoading(true);
         try {
             await createSpecies(values);
             Toast.show({ content: '添加成功' });
             setDialogVisible(false);
-            fetchSpecies();
-        } catch (e) {
+            await fetchSpecies();
+        } catch {
             Toast.show({ content: '添加失败' });
+        } finally {
+            setLoading(false);
         }
     };
 
-
     const handleDeleteSpecies = async (id) => {
+        setLoading(true);
         try {
             await deleteSpecies(id);
             Toast.show({ content: '删除成功' });
-            fetchSpecies();
+            await fetchSpecies();
         } catch {
             Toast.show({ content: '删除失败' });
+        } finally {
+            setLoading(false);
         }
     };
 
+    if (loading) {
+        return (
+            <div
+                style={{
+                    height: '100vh',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                }}
+            >
+                <SpinLoading style={{ '--size': '48px' }} color='primary' />
+            </div>
+        );
+    }
+
     return (
         <>
-            <NavBar backIcon={false}>品种管理</NavBar>
-            <List header="已添加的品种">
-                {speciesList.map((s) => (
-                    <SwipeAction
-                        key={s.id}
-                        rightActions={[
-                            {
-                                key: 'delete',
-                                text: '删除',
-                                color: 'danger',
-                                onClick: () => handleDeleteSpecies(s.id),
-                            },
-                        ]}
-                    >
-                        <List.Item>{s.name}</List.Item>
-                    </SwipeAction>
-                ))}
+            <List header="品种列表">
+                {speciesList.length === 0 ? (
+                    <ErrorBlock status="empty" title={"还没有品种数据"} description={"快添加一个吧"} />
+                ) : (
+                    speciesList.map((s) => (
+                        <SwipeAction
+                            key={s.id}
+                            rightActions={[
+                                {
+                                    key: 'delete',
+                                    text: '删除',
+                                    color: 'danger',
+                                    onClick: () => handleDeleteSpecies(s.id),
+                                },
+                            ]}
+                        >
+                            <List.Item>{s.name}</List.Item>
+                        </SwipeAction>
+                    ))
+                )}
             </List>
 
             <FloatingBubble
@@ -83,7 +110,7 @@ export default function SpeciesManagement() {
             </FloatingBubble>
 
             <Dialog
-                visible={dialogVisible} // 这里可以根据需要控制 Dialog 的显示
+                visible={dialogVisible}
                 onClose={() => setDialogVisible(false)}
                 closeOnMaskClick={true}
                 content={<SpeciesForm onSubmit={handleAddSpecies} />}

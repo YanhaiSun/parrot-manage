@@ -6,49 +6,48 @@ import {
     Dialog,
     FloatingBubble,
     SwipeAction,
-    Button, Modal,
+    Button,
+    Modal,
+    SpinLoading, ErrorBlock,
 } from 'antd-mobile';
-import { AddOutline, EditSOutline } from 'antd-mobile-icons';
+import { AddOutline } from 'antd-mobile-icons';
 import ParrotForm from '../components/ParrotForm';
-import { getParrots, addParrot, getCages, deleteParrot, getSpeciesList, updateParrot } from '../api';
+import {
+    getParrots,
+    addParrot,
+    getCages,
+    deleteParrot,
+    getSpeciesList,
+    updateParrot
+} from '../api';
 
 export default function ParrotManagement() {
     const [parrots, setParrots] = useState([]);
     const [cages, setCages] = useState([]);
     const [speciesList, setSpeciesList] = useState([]);
     const [showForm, setShowForm] = useState(false);
-    const [editParrot, setEditParrot] = useState(null); // 编辑时的鹦鹉数据
+    const [editParrot, setEditParrot] = useState(null);
+    const [loading, setLoading] = useState(true); // 加载状态
 
     useEffect(() => {
-        fetchParrots();
-        fetchCage();
-        fetchSpecies();
+        fetchAllData();
     }, []);
 
-    const fetchParrots = async () => {
+    const fetchAllData = async () => {
         try {
-            const res = await getParrots();
-            setParrots(res.data);
+            setLoading(true);
+            const [parrotsRes, cagesRes, speciesRes] = await Promise.all([
+                getParrots(),
+                getCages(),
+                getSpeciesList(),
+            ]);
+            setParrots(parrotsRes.data);
+            setCages(cagesRes.data);
+            setSpeciesList(speciesRes.data);
         } catch {
-            Toast.show({ content: '获取鹦鹉列表失败' });
-        }
-    };
-
-    const fetchCage = async () => {
-        try {
-            const res = await getCages();
-            setCages(res.data);
-        } catch {
-            Toast.show({ content: '获取笼子列表失败' });
-        }
-    };
-
-    const fetchSpecies = async () => {
-        try {
-            const res = await getSpeciesList();
-            setSpeciesList(res.data);
-        } catch {
-            Toast.show({ content: '获取品种列表失败' });
+            Toast.show({ content: '获取数据失败' });
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -57,7 +56,7 @@ export default function ParrotManagement() {
             await addParrot(data);
             Toast.show({ content: '添加成功' });
             setShowForm(false);
-            fetchParrots();
+            fetchAllData();
         } catch {
             Toast.show({ content: '添加失败' });
         }
@@ -69,7 +68,7 @@ export default function ParrotManagement() {
             Toast.show({ content: '更新成功' });
             setShowForm(false);
             setEditParrot(null);
-            fetchParrots();
+            fetchAllData();
         } catch {
             Toast.show({ content: '更新失败' });
         }
@@ -82,21 +81,26 @@ export default function ParrotManagement() {
                 try {
                     await deleteParrot(id);
                     Toast.show({ content: '删除成功' });
-                    fetchParrots();
+                    fetchAllData();
                 } catch {
                     Toast.show({ content: '删除失败' });
                 }
-            }
+            },
         });
     };
 
-    // 打开编辑弹窗
+    function renderCageDisplay(cageId) {
+        const cage = cages.find(c => c.id === cageId);
+        if (!cage) return '无效笼子';
+        const speciesName = speciesList.find(s => s.id === parseInt(cage.location))?.name || '未知';
+        return `${speciesName}-${cage.cageCode}`;
+    }
+
     const openEditForm = (parrot) => {
         setEditParrot(parrot);
         setShowForm(true);
     };
 
-    // 关闭弹窗时清空编辑状态
     const closeForm = () => {
         setShowForm(false);
         setEditParrot(null);
@@ -104,39 +108,54 @@ export default function ParrotManagement() {
 
     return (
         <>
-            <NavBar backIcon={false}>鹦鹉管理</NavBar>
-
-            <List header="鹦鹉列表">
-                {parrots.map((p) => (
-                    <SwipeAction
-                        key={p.id}
-                        rightActions={[
-                            {
-                                key: 'edit',
-                                text: '编辑',
-                                color: 'primary',
-                                onClick: () => openEditForm(p),
-                            },
-                            {
-                                key: 'delete',
-                                text: '删除',
-                                color: 'danger',
-                                onClick: () => handleDeleteParrot(p.id),
-                            },
-                        ]}
-                    >
-                        <List.Item
-                            description={`品种: ${speciesList.find(s => s.id === p.species)?.name || '未知品种'}, 性别: ${p.gender}, 笼子: ${cages.find(c => c.id === p.cageId)?.cageCode || '未分配'}`}
+            {loading ? (
+                <div
+                    style={{
+                        height: '100vh',
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                    }}
+                >
+                    <SpinLoading style={{ '--size': '48px' }} color='primary' />
+                </div>
+            ) : parrots.length === 0 ? (
+                <ErrorBlock status='empty' title={"没有鹦鹉数据"} description={"快添加一个吧"}/>
+            ) : (
+                <List header="鹦鹉列表">
+                    {parrots.map((p) => (
+                        <SwipeAction
+                            key={p.id}
+                            rightActions={[
+                                {
+                                    key: 'edit',
+                                    text: '编辑',
+                                    color: 'primary',
+                                    onClick: () => openEditForm(p),
+                                },
+                                {
+                                    key: 'delete',
+                                    text: '删除',
+                                    color: 'danger',
+                                    onClick: () => handleDeleteParrot(p.id),
+                                },
+                            ]}
                         >
-                            {p.ringNumber}
-                        </List.Item>
-                    </SwipeAction>
-                ))}
-            </List>
-
+                            <List.Item
+                                description={`品种: ${speciesList.find(s => s.id === p.species)?.name || '未知'}, 性别: ${p.gender}, 笼子: ${p.cageId ? renderCageDisplay(p.cageId) : '未知'}`}
+                            >
+                                {p.ringNumber}
+                            </List.Item>
+                        </SwipeAction>
+                    ))}
+                </List>
+            )}
 
             <FloatingBubble
-                style={{ '--initial-position-bottom': '80px', '--initial-position-right': '24px' }}
+                style={{
+                    '--initial-position-bottom': '80px',
+                    '--initial-position-right': '24px',
+                }}
                 onClick={() => setShowForm(true)}
             >
                 <AddOutline fontSize={32} />

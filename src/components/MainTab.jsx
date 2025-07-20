@@ -8,25 +8,26 @@ import CagePage from '../pages/CageManagement'
 import SpeciesPage from "../pages/SpeciesManagement";
 import SearchPage from '../pages/SearchParrot'
 import CageParrotList from "../pages/CageParrotList.jsx";
+import {useEffect, useState} from "react";
 
 const tabs = [
     {
-        key: '/parrots',
+        key: '/parrot-web/parrots',
         title: '鹦鹉',
         icon: <StarOutline />,
     },
     {
-        key: '/cages',
+        key: '/parrot-web/cages',
         title: '笼子',
         icon: <AppOutline />,
     },
     {
-        key: '/species',
+        key: '/parrot-web/species',
         title: '品种',
         icon: <UnorderedListOutline />,
     },
     {
-        key: '/search',
+        key: '/parrot-web/search',
         title: '搜索',
         icon: <SearchOutline />,
     },
@@ -37,27 +38,38 @@ export default function MainTab() {
     const navigate = useNavigate()
     const { pathname } = location
 
+    const [viewHeight, setViewHeight] = useState(window.innerHeight)
+
+    useEffect(() => {
+        const resize = () => setViewHeight(window.innerHeight)
+        window.addEventListener('resize', resize)
+        return () => window.removeEventListener('resize', resize)
+    }, [])
+
     return (
-        <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column' }}>
-            {/* 页面主体内容占满剩余高度 */}
+        <div style={{ height: viewHeight, display: 'flex', flexDirection: 'column' }}>
             <div style={{ flex: 1, overflow: 'auto', background: '#f5f5f5' }}>
                 <Routes>
-                    <Route path="/parrots" element={<ParrotPage />} />
-                    <Route path="/cages" element={<CagePage />} />
-                    <Route path="/species" element={<SpeciesPage />} />
-                    <Route path="/search" element={<SearchPage />} />
-                    <Route path="/cage/:cageId/parrots" element={<CageParrotList />} />
-                    <Route path="*" element={<ParrotPage />} />
+                    <Route path="/parrot-web/parrots" element={<ParrotPage />} />
+                    <Route path="/parrot-web/cages" element={<CagePage />} />
+                    <Route path="/parrot-web/species" element={<SpeciesPage />} />
+                    <Route path="/parrot-web/search" element={<SearchPage />} />
+                    <Route path="/parrot-web/cage/:cageId/parrots" element={<CageParrotList />} />
+                    <Route path="/parrot-web/*" element={<ParrotPage />} />
                 </Routes>
             </div>
 
-            {/* 固定在底部的 TabBar */}
-            <TabBar safeArea activeKey={pathname} onChange={key => navigate(key)} style={{
-                zIndex: 1000,
-                paddingBottom: 8,
-                paddingTop: 5,
-                borderTop: '1px solid #f0f0f0',
-            }}>
+            <TabBar
+                safeArea
+                activeKey={pathname}
+                onChange={key => navigate(key)}
+                style={{
+                    // zIndex: 1000,
+                    // paddingBottom: 4,
+                    // paddingTop: 2,
+                    borderTop: '1px solid #f0f0f0',
+                }}
+            >
                 {tabs.map(item => (
                     <TabBar.Item key={item.key} icon={item.icon} title={item.title} />
                 ))}
