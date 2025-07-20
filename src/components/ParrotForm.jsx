@@ -2,7 +2,7 @@ import {Form, Input, Button, Picker} from 'antd-mobile';
 import {useEffect, useState} from 'react';
 import {getSpeciesList, getCages} from '../api';
 
-export default function ParrotForm({onSubmit, initialValues}) {
+export default function ParrotForm({ onSubmit, initialValues, disableCageSelection = false }) {
     const [form] = Form.useForm();
     const [speciesList, setSpeciesList] = useState([]);
     const [speciesVisible, setSpeciesVisible] = useState(false);
@@ -48,6 +48,7 @@ export default function ParrotForm({onSubmit, initialValues}) {
     const handleFinish = async (values) => {
         await onSubmit({
             ...values,
+            id: initialValues?.id,
             species: values.species,
             gender: values.gender,
         });
@@ -133,40 +134,45 @@ export default function ParrotForm({onSubmit, initialValues}) {
                 />
             </Form.Item>
 
-            <Form.Item
-                name="age"
-                label="年龄"
-                rules={[{required: true}]}
-            >
-                <Input type="number" placeholder="请输入年龄"/>
-            </Form.Item>
+            {/*<Form.Item*/}
+            {/*    name="age"*/}
+            {/*    label="年龄"*/}
+            {/*    rules={[{required: true}]}*/}
+            {/*>*/}
+            {/*    <Input type="number" placeholder="请输入年龄"/>*/}
+            {/*</Form.Item>*/}
 
             <Form.Item
                 name="cageId"
                 label="所属笼子"
-                rules={[{required: true}]}
-                onClick={() => setCageVisible(true)}
+                rules={[{ required: true }]}
+                onClick={() => {
+                    if (!disableCageSelection) setCageVisible(true);
+                }}
             >
-                <div>
+                <div style={disableCageSelection ? { color: '#999' } : {}}>
                     {cages.find(cage => cage.id === cageValue[0])?.cageCode || '请选择笼子'}
                 </div>
-                <Picker
-                    columns={[cages.map(cage => ({
-                        label: cage.cageCode,
-                        value: cage.id,
-                    }))]}
-                    visible={cageVisible}
-                    onClose={() => setCageVisible(false)}
-                    value={cageValue}
-                    onConfirm={(v) => {
-                        const selectedId = v[0];
-                        setCageVisible(false);
-                        setCageValue([selectedId]);
-                        form.setFieldsValue({cageId: selectedId});
-                    }}
 
-                />
+                {!disableCageSelection && (
+                    <Picker
+                        columns={[cages.map(cage => ({
+                            label: cage.cageCode,
+                            value: cage.id,
+                        }))]}
+                        visible={cageVisible}
+                        onClose={() => setCageVisible(false)}
+                        value={cageValue}
+                        onConfirm={(v) => {
+                            const selectedId = v[0];
+                            setCageVisible(false);
+                            setCageValue([selectedId]);
+                            form.setFieldsValue({ cageId: selectedId });
+                        }}
+                    />
+                )}
             </Form.Item>
+
 
         </Form>
     );

@@ -6,7 +6,7 @@ import {
     Dialog,
     FloatingBubble,
     SwipeAction,
-    Button,
+    Button, Modal,
 } from 'antd-mobile';
 import { AddOutline, EditSOutline } from 'antd-mobile-icons';
 import ParrotForm from '../components/ParrotForm';
@@ -76,13 +76,18 @@ export default function ParrotManagement() {
     };
 
     const handleDeleteParrot = async (id) => {
-        try {
-            await deleteParrot(id);
-            Toast.show({ content: '删除成功' });
-            fetchParrots();
-        } catch {
-            Toast.show({ content: '删除失败' });
-        }
+        Modal.confirm({
+            content: '确定要删除这只鹦鹉吗？',
+            onConfirm: async () => {
+                try {
+                    await deleteParrot(id);
+                    Toast.show({ content: '删除成功' });
+                    fetchParrots();
+                } catch {
+                    Toast.show({ content: '删除失败' });
+                }
+            }
+        });
     };
 
     // 打开编辑弹窗
@@ -121,7 +126,7 @@ export default function ParrotManagement() {
                         ]}
                     >
                         <List.Item
-                            description={`品种: ${speciesList.find(s => s.id === p.species)?.name || '未知品种'}, 性别: ${p.gender}, 年龄: ${p.age}, 笼子: ${cages.find(c => c.id === p.cageId)?.cageCode || '未分配'}`}
+                            description={`品种: ${speciesList.find(s => s.id === p.species)?.name || '未知品种'}, 性别: ${p.gender}, 笼子: ${cages.find(c => c.id === p.cageId)?.cageCode || '未分配'}`}
                         >
                             {p.ringNumber}
                         </List.Item>

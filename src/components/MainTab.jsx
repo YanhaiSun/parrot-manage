@@ -1,7 +1,6 @@
 import { TabBar } from 'antd-mobile'
 import {
-    AppOutline,
-    SearchOutline,
+    AppOutline, SearchOutline, StarOutline, UnorderedListOutline,
 } from 'antd-mobile-icons'
 import { useLocation, useNavigate, Routes, Route } from 'react-router-dom'
 import ParrotPage from '../pages/ParrotManagement'
@@ -14,7 +13,7 @@ const tabs = [
     {
         key: '/parrots',
         title: '鹦鹉',
-        icon: <AppOutline />,
+        icon: <StarOutline />,
     },
     {
         key: '/cages',
@@ -24,7 +23,7 @@ const tabs = [
     {
         key: '/species',
         title: '品种',
-        icon: <AppOutline />,
+        icon: <UnorderedListOutline />,
     },
     {
         key: '/search',
@@ -53,7 +52,12 @@ export default function MainTab() {
             </div>
 
             {/* 固定在底部的 TabBar */}
-            <TabBar safeArea activeKey={pathname} onChange={key => navigate(key)}>
+            <TabBar safeArea activeKey={pathname} onChange={key => navigate(key)} style={{
+                zIndex: 1000,
+                paddingBottom: 8,
+                paddingTop: 5,
+                borderTop: '1px solid #f0f0f0',
+            }}>
                 {tabs.map(item => (
                     <TabBar.Item key={item.key} icon={item.icon} title={item.title} />
                 ))}

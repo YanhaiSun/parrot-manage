@@ -1,24 +1,40 @@
 import React, { useEffect, useState } from 'react';
-import {NavBar, List, Toast, FloatingBubble, Dialog} from 'antd-mobile';
+import {
+    NavBar,
+    List,
+    Toast,
+    FloatingBubble,
+    Dialog,
+    SwipeAction,
+    ActionSheet,
+    Modal
+} from 'antd-mobile';
 import { useParams } from 'react-router-dom';
-import {getParrotsByCageId, getSpeciesList, addParrot, updateParrot} from '../api';
-import {AddOutline} from "antd-mobile-icons";
-import ParrotForm from "../components/ParrotForm.jsx"; // 你需要创建这个 API
+import { AddOutline } from 'antd-mobile-icons';
+
+import {
+    getParrotsByCageId,
+    getSpeciesList,
+    addParrot,
+    updateParrot,
+    deleteParrot
+} from '../api';
+
+import ParrotForm from '../components/ParrotForm.jsx';
 
 export default function CageParrotList() {
     const { cageId } = useParams();
     const [parrots, setParrots] = useState([]);
     const [speciesList, setSpeciesList] = useState([]);
     const [showForm, setShowForm] = useState(false);
-    const closeForm = () => {
-        setShowForm(false);
-        setEditParrot(null); // 清除编辑状态
-    }
     const [editParrot, setEditParrot] = useState(null);
 
+    const closeForm = () => {
+        setShowForm(false);
+        setEditParrot(null);
+    };
 
     useEffect(() => {
-        console.log(`Fetching parrots for cage ID: ${cageId}`)
         fetchParrots();
         fetchSpecies();
     }, []);
@@ -26,8 +42,7 @@ export default function CageParrotList() {
     const fetchParrots = async () => {
         try {
             const res = await getParrotsByCageId(cageId);
-            console.log('parrots 接口返回数据:', res);
-            setParrots(res.data); // 可能需要修改
+            setParrots(res.data || []);
         } catch {
             Toast.show({ content: '获取鹦鹉失败' });
         }
@@ -36,64 +51,114 @@ export default function CageParrotList() {
     const fetchSpecies = async () => {
         try {
             const res = await getSpeciesList();
-            console.log('species 接口返回数据:', res);
-            setSpeciesList(res.data);
+            setSpeciesList(res.data || []);
         } catch {
-            Toast.show({ content: '获取鹦鹉失败' });
+            Toast.show({ content: '获取品种失败' });
         }
-    }
+    };
 
-    const handleAddParrot = (values) => {
-        console.log('添加鹦鹉数据:', values);
-        // 添加鹦鹉的 API
-        addParrot({ ...values, cageId }) // 假设 API 接口需要 cageId
-        // 假设添加成功后，重新获取鹦鹉列表
-        fetchParrots();
-        setShowForm(false); // 关闭表单
-    }
+    const handleAddParrot = async (values) => {
+        try {
+            await addParrot({ ...values, cageId: parseInt(cageId) });
+            Toast.show({ content: '添加成功' });
+            closeForm();
+            fetchParrots();
+        } catch {
+            Toast.show({ content: '添加失败' });
+        }
+    };
 
-    const handleUpdateParrot = (values) => {
-        console.log('更新鹦鹉数据:', values);
-        // 更新鹦鹉的 API
-        updateParrot(values.id, values) // 假设 API 接口需要传入 ID
-        // 假设更新成功后，重新获取鹦鹉列表
-        fetchParrots();
-        setShowForm(false); // 关闭表单
-    }
+    const handleUpdateParrot = async (values) => {
+        try {
+            await updateParrot(values.id, values);
+            Toast.show({ content: '更新成功' });
+            closeForm();
+            fetchParrots();
+        } catch {
+            Toast.show({ content: '更新失败' });
+        }
+    };
 
+    const handleDeleteParrot = async (id) => {
+        Modal.confirm({
+            content: '确定要删除这只鹦鹉吗？',
+            onConfirm: async () => {
+                try {
+                    await deleteParrot(id);
+                    Toast.show({ content: '删除成功' });
+                    fetchParrots();
+                } catch {
+                    Toast.show({ content: '删除失败' });
+                }
+            }
+        });
+    };
+
+    const renderDescription = (p) => {
+        const speciesName =
+            speciesList.find((s) => s.id === p.species)?.name || '未知';
+        return `品种: ${speciesName}, 性别: ${p.gender}`;
+    };
 
     return (
         <>
             <NavBar back="返回" onBack={() => window.history.back()}>
                 笼子内鹦鹉
             </NavBar>
+
             <List header="鹦鹉列表">
-                {parrots.map(p => (
-                    <List.Item key={p.id} description={`性别: ${p.gender}, 品种: ${
-                        p.species = speciesList.find(s => s.id === p.species)?.name || '未知'
-                    }`}>
-                        {p.ringNumber}
-                    </List.Item>
+                {parrots.map((p) => (
+                    <SwipeAction
+                        key={p.id}
+                        rightActions={[
+                            {
+                                key: 'edit',
+                                text: '编辑',
+                                color: 'primary',
+                                onClick: () => {
+                                    setEditParrot(p);
+                                    setShowForm(true);
+                                }
+                            },
+                            {
+                                key: 'delete',
+                                text: '删除',
+                                color: 'danger',
+                                onClick: () => handleDeleteParrot(p.id)
+                            }
+                        ]}
+                    >
+                        <List.Item description={renderDescription(p)}>
+                            {p.ringNumber}
+                        </List.Item>
+                    </SwipeAction>
                 ))}
             </List>
 
             <FloatingBubble
-                style={{ '--initial-position-bottom': '80px', '--initial-position-right': '24px' }}
-                onClick={() => setShowForm(true)}
+                style={{
+                    '--initial-position-bottom': '80px',
+                    '--initial-position-right': '24px'
+                }}
+                onClick={() => {
+                    setEditParrot(null);
+                    setShowForm(true);
+                }}
             >
                 <AddOutline fontSize={32} />
             </FloatingBubble>
 
             <Dialog
                 visible={showForm}
-                onClose={closeForm}
                 content={
                     <ParrotForm
                         onSubmit={editParrot ? handleUpdateParrot : handleAddParrot}
-                        initialValues={editParrot || {}}
+                        initialValues={editParrot || { cageId: parseInt(cageId) }}
+                        disableCageSelection={!editParrot}
                     />
                 }
                 closeOnMaskClick={true}
+                onClose={closeForm}
             />
         </>
     );
