@@ -25,27 +25,38 @@ export default function ParrotForm({onSubmit, initialValues}) {
     }, []);
 
     useEffect(() => {
-        if (initialValues) {
+        const ready = speciesList.length > 0 && cages.length > 0 && initialValues;
+
+        if (ready) {
             form.setFieldsValue({
                 ...initialValues,
-                speciesId: initialValues.species ? [initialValues.species] : initialValues.speciesId ? [initialValues.speciesId] : [],
-                gender: initialValues.gender ? [initialValues.gender] : [],
+                species: initialValues.species,
+                gender: initialValues.gender,
+                cageId: initialValues.cageId,
             });
-            setSpeciesValue(initialValues.speciesId ? [initialValues.speciesId] : []);
-            setGenderValue(initialValues.gender ? [initialValues.gender] : []);
+            setSpeciesValue([initialValues.species]);
+            setGenderValue([initialValues.gender]);
+            setCageValue([initialValues.cageId]);
+            console.log('设置表单初始值:', {
+                ...initialValues,
+            }
+            );
         }
-    }, [initialValues]);
+    }, [initialValues, speciesList, cages]);
+
 
     const handleFinish = async (values) => {
         await onSubmit({
             ...values,
-            speciesId: values.speciesId ? values.speciesId[0] : undefined,
-            gender: values.gender ? values.gender[0] : undefined,
+            species: values.species,
+            gender: values.gender,
         });
         form.resetFields();
         setSpeciesValue([]);
         setGenderValue([]);
+        setCageValue([]);
     };
+
 
     const fetchCages = async () => {
         try {
@@ -89,11 +100,12 @@ export default function ParrotForm({onSubmit, initialValues}) {
                     onClose={() => setSpeciesVisible(false)}
                     value={speciesValue}
                     onConfirm={(v) => {
-                        const selectedId = v[0];  // v 是一个数组，比如 [1]
+                        const selectedId = v[0];
                         setSpeciesVisible(false);
-                        setSpeciesValue([selectedId]); // 显示用的仍是数组
-                        form.setFieldsValue({species: selectedId});
+                        setSpeciesValue([selectedId]);       // Picker 用数组控制显示
+                        form.setFieldsValue({species: selectedId}); // ✅ 表单字段用 int
                     }}
+
                 />
             </Form.Item>
 
@@ -112,10 +124,12 @@ export default function ParrotForm({onSubmit, initialValues}) {
                     onClose={() => setGenderVisible(false)}
                     value={genderValue}
                     onConfirm={(v) => {
+                        const selected = v[0];
                         setGenderVisible(false);
-                        setGenderValue(v);
-                        form.setFieldsValue({gender: v});
+                        setGenderValue([selected]);
+                        form.setFieldsValue({gender: selected}); // ✅ 字段是字符串，不是数组
                     }}
+
                 />
             </Form.Item>
 
@@ -145,10 +159,12 @@ export default function ParrotForm({onSubmit, initialValues}) {
                     onClose={() => setCageVisible(false)}
                     value={cageValue}
                     onConfirm={(v) => {
+                        const selectedId = v[0];
                         setCageVisible(false);
-                        setCageValue(v);
-                        form.setFieldsValue({cageId: v[0]});
+                        setCageValue([selectedId]);
+                        form.setFieldsValue({cageId: selectedId});
                     }}
+
                 />
             </Form.Item>
 
