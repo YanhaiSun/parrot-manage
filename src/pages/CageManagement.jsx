@@ -18,7 +18,7 @@ import {
     Badge
 } from 'antd-mobile';
 import { AddOutline, FilterOutline } from 'antd-mobile-icons';
-import { getCages, addCage, deleteCage, getSpeciesList, getCagesByLocation } from '../api';
+import { getCages, addCage, deleteCage, getSpeciesList, getCagesByLocation, searchCages } from '../api';
 
 export default function CageManagement() {
     const [data, setData] = useState({
@@ -44,13 +44,6 @@ export default function CageManagement() {
         fetchSpecies();
     }, []);
 
-    useEffect(() => {
-        // 只在搜索文本变化时触发本地过滤
-        if (searchText) {
-            filterCagesLocally();
-        }
-    }, [searchText]);
-
     const fetchInitialData = async () => {
         setLoading(true);
         try {
@@ -60,7 +53,7 @@ export default function CageManagement() {
                 total: res.data.total,
                 hasMore: res.data.records.length >= pageSize
             });
-            setFilteredCages(res.data.records); // 初始加载时设置过滤后的数据
+            setFilteredCages(res.data.records);
         } catch (error) {
             Toast.show({ content: '获取笼子列表失败' });
         } finally {
@@ -68,19 +61,50 @@ export default function CageManagement() {
         }
     };
 
+    const fetchSpecies = async () => {
+        try {
+            const res = await getSpeciesList();
+            setSpeciesList(res.data || []);
+        } catch {
+            Toast.show({ content: '获取品种列表失败' });
+        }
+    };
+
+    const handleSearch = async (value) => {
+        setSearchText(value);
+        // 移除这里的自动搜索逻辑
+    };
+
+    const handleSearchSubmit = async () => {
+        if (searchText) {
+            try {
+                setLoading(true);
+                // 搜索时清除筛选数据
+                setSelectedSpecies([]);
+                const res = await searchCages(searchText);
+                setFilteredCages(res.data || []);
+            } catch (error) {
+                Toast.show({ content: '搜索失败' });
+            } finally {
+                setLoading(false);
+            }
+        } else {
+            // 搜索框为空时恢复显示所有笼子
+            setFilteredCages(data.records);
+        }
+    };
+
     const fetchFilteredCagesBySpecies = async () => {
         try {
             setLoading(true);
-
             if (selectedSpecies.length > 0) {
-                // 使用接口获取筛选数据
                 const promises = selectedSpecies.map(speciesId =>
                     getCagesByLocation(speciesId)
                 );
                 const responses = await Promise.all(promises);
                 let result = responses.flatMap(res => res.data || []);
 
-                // 本地搜索过滤
+                // 如果有搜索文本，再进行本地过滤
                 if (searchText) {
                     result = result.filter(cage =>
                         cage.cageCode.toLowerCase().includes(searchText.toLowerCase())
@@ -89,26 +113,14 @@ export default function CageManagement() {
 
                 setFilteredCages(result);
             } else {
-                // 没有选择品种时，使用本地过滤
-                filterCagesLocally();
+                // 没有选择品种时，显示所有笼子
+                setFilteredCages(data.records);
             }
         } catch (error) {
             Toast.show({ content: '获取筛选数据失败' });
         } finally {
             setLoading(false);
         }
-    };
-
-    const filterCagesLocally = () => {
-        let result = [...data.records];
-
-        if (searchText) {
-            result = result.filter(cage =>
-                cage.cageCode.toLowerCase().includes(searchText.toLowerCase())
-            );
-        }
-
-        setFilteredCages(result);
     };
 
     const loadMore = async () => {
@@ -122,25 +134,18 @@ export default function CageManagement() {
                 hasMore: res.data.records.length >= pageSize
             }));
 
-            // 加载更多后更新过滤结果
+            // 更新过滤结果
             if (selectedSpecies.length > 0) {
                 fetchFilteredCagesBySpecies();
+            } else if (searchText) {
+                handleSearch(searchText);
             } else {
-                filterCagesLocally();
+                setFilteredCages(prev => [...prev, ...res.data.records]);
             }
 
             setPage(nextPage);
         } catch (error) {
             Toast.show({ content: '加载更多失败' });
-        }
-    };
-
-    const fetchSpecies = async () => {
-        try {
-            const res = await getSpeciesList();
-            setSpeciesList(res.data || []);
-        } catch {
-            Toast.show({ content: '获取品种列表失败' });
         }
     };
 
@@ -160,6 +165,8 @@ export default function CageManagement() {
             });
             setFilteredCages(res.data.records);
             setPage(1);
+            setSelectedSpecies([]);
+            setSearchText('');
         } catch {
             Toast.show({ content: '添加失败' });
         }
@@ -184,6 +191,8 @@ export default function CageManagement() {
                     // 更新过滤结果
                     if (selectedSpecies.length > 0) {
                         fetchFilteredCagesBySpecies();
+                    } else if (searchText) {
+                        handleSearch(searchText);
                     } else {
                         setFilteredCages(res.data.records);
                     }
@@ -192,10 +201,6 @@ export default function CageManagement() {
                 }
             },
         });
-    };
-
-    const handleSearch = (value) => {
-        setSearchText(value);
     };
 
     const handleFilterChange = (value) => {
@@ -209,9 +214,6 @@ export default function CageManagement() {
         } else {
             // 如果没有选择品种，则显示所有笼子
             setFilteredCages(data.records);
-            if (searchText) {
-                filterCagesLocally();
-            }
         }
     };
 
@@ -234,28 +236,30 @@ export default function CageManagement() {
                         flexDirection: 'row',
                         alignItems: 'center',
                         justifyContent: 'space-between',
+                        gap: '8px',
                         backgroundColor: '#fff',
                     }}>
                         <SearchBar
                             placeholder="搜索笼子编号"
-                            onSearch={handleSearch}
-                            onChange={handleSearch}
+                            onSearch={handleSearchSubmit}  // 仅在回车时触发
+                            onChange={handleSearch}       // 仅更新搜索文本状态
                             value={searchText}
-                            style={{ width: '70%' }}
+                            style={{ width: '100%' }}
                         />
+
 
                         <div style={{
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '8px'
+                            gap: '1px'
                         }}>
-                            <Badge content={`总计: ${data.total}`} color='primary' />
+                            {/*<Badge content={`总计: ${data.total}`} color='primary' />*/}
                             <Button
                                 size='small'
                                 onClick={() => setFilterVisible(true)}
-                                style={{ '--border-radius': '20px' }}
+                                // style={{ '--border-radius': '20px' }}
                             >
-                                <FilterOutline /> 筛选
+                                <FilterOutline />
                             </Button>
                         </div>
                     </div>
@@ -268,7 +272,14 @@ export default function CageManagement() {
                         />
                     ) : (
                         <>
-                            <List header="笼子列表">
+                            <List header={
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span>笼子列表</span>
+                                    <span style={{ color: '#888', fontSize: '14px'}}>
+                                        总计: {data.total}个笼子
+                                    </span>
+                                </div>
+                            }>
                                 {filteredCages.map((c) => (
                                     <SwipeAction
                                         key={c.id}
@@ -290,7 +301,7 @@ export default function CageManagement() {
                                     </SwipeAction>
                                 ))}
                             </List>
-                            {selectedSpecies.length === 0 && (
+                            {selectedSpecies.length === 0 && !searchText && (
                                 <InfiniteScroll
                                     loadMore={loadMore}
                                     hasMore={data.hasMore}

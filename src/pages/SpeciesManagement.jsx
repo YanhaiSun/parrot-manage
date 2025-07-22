@@ -9,12 +9,14 @@ import {
     ErrorBlock,
 } from 'antd-mobile';
 import { AddOutline } from 'antd-mobile-icons';
-import { getSpeciesList, createSpecies, deleteSpecies } from '../api';
+import {getSpeciesList, createSpecies, deleteSpecies, updateSpecies} from '../api';
 import SpeciesForm from "../components/SpeciesForm.jsx";
 
 export default function SpeciesManagement() {
     const [speciesList, setSpeciesList] = useState([]);
     const [dialogVisible, setDialogVisible] = useState(false);
+    const [editingSpecies, setEditingSpecies] = useState(null);
+
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -60,6 +62,27 @@ export default function SpeciesManagement() {
         }
     };
 
+    const handleUpdateSpecies = async (values) => {
+        setLoading(true);
+        try {
+            await updateSpecies(editingSpecies.id, values);
+            Toast.show({ content: '更新成功' });
+            setDialogVisible(false);
+            setEditingSpecies(null);
+            await fetchSpecies();
+        } catch {
+            Toast.show({ content: '更新失败' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const openEditDialog = (species) => {
+        console.log('species', species)
+        setEditingSpecies(species);
+        setDialogVisible(true);
+    };
+
     if (loading) {
         return (
             <div
@@ -86,11 +109,20 @@ export default function SpeciesManagement() {
                             key={s.id}
                             rightActions={[
                                 {
+                                    key: 'edit',
+                                    text: '编辑',
+                                    color: 'primary',
+                                    onClick: () => {
+                                        openEditDialog(s)
+                                    }
+                                },
+                                {
                                     key: 'delete',
                                     text: '删除',
                                     color: 'danger',
                                     onClick: () => handleDeleteSpecies(s.id),
-                                },
+                                }
+
                             ]}
                         >
                             <List.Item>{s.name}</List.Item>
@@ -111,9 +143,17 @@ export default function SpeciesManagement() {
 
             <Dialog
                 visible={dialogVisible}
-                onClose={() => setDialogVisible(false)}
+                onClose={() => {
+                    setDialogVisible(false);
+                    setEditingSpecies(null);
+                }}
                 closeOnMaskClick={true}
-                content={<SpeciesForm onSubmit={handleAddSpecies} />}
+                content={
+                    <SpeciesForm
+                        onSubmit={editingSpecies ? handleUpdateSpecies : handleAddSpecies}
+                        initialValues={editingSpecies}
+                    />
+                }
             />
         </>
     );

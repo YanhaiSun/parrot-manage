@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { NavBar, SearchBar, List, Toast, SpinLoading, ErrorBlock } from 'antd-mobile';
-import {getCages, getSpeciesList, searchParrotsByRing} from '../api/index.js';
+import {getAllCages, getCages, getSpeciesList, searchParrotsByRing} from '../api/index.js';
 
 export default function SearchParrot() {
     const [searchKey, setSearchKey] = useState('');
@@ -18,8 +18,10 @@ export default function SearchParrot() {
     const fetchCages = async () => {
         setLoading(true);
         try {
-            const res = await getCages();
-            setCages(res.data || []);
+            const res = await getAllCages();
+            console.log('Fetched cages:', res.data)
+            // Ensure we're setting an array, even if the response is null/undefined
+            setCages(Array.isArray(res?.data) ? res.data : []);
         } catch {
             Toast.show({ content: '获取笼子列表失败' });
         }
@@ -30,7 +32,8 @@ export default function SearchParrot() {
         setLoading(true);
         try {
             const res = await getSpeciesList();
-            setSpeciesList(res.data || []);
+            // Ensure we're setting an array, even if the response is null/undefined
+            setSpeciesList(Array.isArray(res?.data) ? res.data : []);
         } catch {
             Toast.show({ content: '获取品种列表失败' });
         }
@@ -38,10 +41,19 @@ export default function SearchParrot() {
     }
 
     function renderCageDisplay(cageId) {
+        // Add additional checks to ensure cages is an array
+        if (!Array.isArray(cages) || !cageId) return '未知';
+
         const cage = cages.find(c => c.id === cageId);
-        if (!cage) return '无效笼子';
-        const speciesName = speciesList.find(s => s.id === parseInt(cage.location))?.name || '未知';
-        return `${speciesName}-${cage.cageCode}`;
+        if (!cage) return '未知';
+
+        // Add checks for speciesList
+        const species = Array.isArray(speciesList)
+            ? speciesList.find(s => s.id === parseInt(cage.location))
+            : null;
+        const speciesName = species?.name || '未知';
+
+        return `${speciesName}-${cage.cageCode || '未知'}`;
     }
 
     const onSearch = async () => {
@@ -52,7 +64,8 @@ export default function SearchParrot() {
         setLoading(true);
         try {
             const res = await searchParrotsByRing(searchKey);
-            setResults(res.data);
+            // Ensure we're setting an array, even if the response is null/undefined
+            setResults(Array.isArray(res?.data) ? res.data : []);
         } catch {
             Toast.show('查询失败');
         }
@@ -62,7 +75,6 @@ export default function SearchParrot() {
     return (
         <>
             <NavBar
-                backArrow={false}
                 onBack={() => window.history.back()}
                 style={{
                     backgroundColor: '#fff',
@@ -109,7 +121,7 @@ export default function SearchParrot() {
                     {results.map((p) => (
                         <List.Item
                             key={p.id}
-                            description={`品种: ${p.species ? speciesList.find((s) => s.id === p.species)?.name : '未知'}, 性别: ${p.gender}, 笼子: 
+                            description={`品种: ${p.species ? (Array.isArray(speciesList) ? speciesList.find((s) => s.id === p.species)?.name : '未知') : '未知'}, 性别: ${p.gender || '未知'}, 笼子: 
                                 ${p.cageId ? renderCageDisplay(p.cageId) : '未知'
                             }`}
                         >

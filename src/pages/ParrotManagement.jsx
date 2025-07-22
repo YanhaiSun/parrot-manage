@@ -159,7 +159,9 @@ export default function ParrotManagement() {
                     <List header={
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span>鹦鹉列表</span>
-                            <Badge content={`总计: ${total}`} color='primary' />
+                            <span style={{ color: '#888', fontSize: '14px' }}>
+                                总计{total}只鹦鹉
+                            </span>
                         </div>
                     }>
                         {parrots.map((p) => (
