@@ -132,7 +132,12 @@ export default function ParrotManagement() {
     }
 
     const openEditForm = (parrot) => {
-        setEditParrot(parrot);
+        setEditParrot({
+            ...parrot,
+            species: parrot.species,
+            gender: parrot.gender,
+            cageId: parrot.cageId
+        });
         setShowForm(true);
     };
 
@@ -207,11 +212,20 @@ export default function ParrotManagement() {
             <Dialog
                 visible={showForm}
                 onClose={closeForm}
+                title={editParrot ? '编辑鹦鹉' : '添加鹦鹉'}
                 content={
-                    <ParrotForm
-                        onSubmit={editParrot ? handleUpdateParrot : handleAddParrot}
-                        initialValues={editParrot || {}}
-                    />
+                    showForm && (  // 添加条件渲染，确保每次打开都是新实例
+                        <ParrotForm
+                            key={editParrot?.id || 'create'} // 添加 key 强制重新渲染
+                            onSubmit={editParrot ? handleUpdateParrot : handleAddParrot}
+                            initialValues={editParrot ? {
+                                ...editParrot,
+                                species: editParrot.species,
+                                gender: editParrot.gender,
+                                cageId: editParrot.cageId
+                            } : {}}
+                        />
+                    )
                 }
                 closeOnMaskClick={true}
             />

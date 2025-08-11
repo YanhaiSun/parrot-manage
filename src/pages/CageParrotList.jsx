@@ -183,16 +183,27 @@ export default function CageParrotList() {
 
             <Dialog
                 visible={showForm}
+                title={editParrot ? '编辑鹦鹉' : '添加鹦鹉'}
                 content={
-                    <ParrotForm
-                        onSubmit={editParrot ? handleUpdateParrot : handleAddParrot}
-                        initialValues={editParrot || {
-                            cageId: parseInt(cageId),
-                            species: currentCage?.location ? parseInt(currentCage.location) : undefined
-                        }}
-                        disableCageSelection={!editParrot}
-                        forceSpecies={!editParrot ? currentCage?.location : undefined}
-                    />
+                    showForm && ( // 添加条件渲染
+                        <ParrotForm
+                            key={editParrot ? `edit-${editParrot.id}` : 'create'} // 添加 key 强制重新渲染
+                            onSubmit={editParrot ? handleUpdateParrot : handleAddParrot}
+                            initialValues={editParrot ? {
+                                ...editParrot,
+                                species: editParrot.species,
+                                gender: editParrot.gender,
+                                cageId: editParrot.cageId
+                            } : {
+                                ringNumber: '', // 明确设置空值
+                                species: currentCage?.location ? parseInt(currentCage.location) : undefined,
+                                gender: undefined,
+                                cageId: parseInt(cageId)
+                            }}
+                            disableCageSelection={!editParrot}
+                            forceSpecies={!editParrot ? currentCage?.location : undefined}
+                        />
+                    )
                 }
                 closeOnMaskClick={true}
                 onClose={closeForm}

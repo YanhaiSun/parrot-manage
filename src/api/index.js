@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 const api = axios.create({
-    baseURL: 'https://suduan.top/parrot/api', // 后端接口地址
-    // baseURL: 'http://localhost:18976/api',
+    // baseURL: 'https://suduan.top/parrot/api', // 后端接口地址
+    baseURL: 'http://localhost:18976/api',
     timeout: 5000,
 });
 
@@ -17,7 +17,7 @@ export const updateParrot = (id, data) => api.put(`/parrots/${id}`, data);
 export async function getParrotsByCageId(cageId) {return await api.get(`/parrots/by-cage/${cageId}`);}
 
 export const getCages = (page = 1, pageSize = 50) =>
-    api.get(`/cages?pageNum=${page}&pageSize=${pageSize}`);
+    api.get(`/cages/with-parrot-count?pageNum=${page}&pageSize=${pageSize}`);
 
 export const getAllCages = () => api.get('/cages/all');
 
@@ -46,6 +46,14 @@ export const getCagesByLocation = (location) => {
 
 export const searchCages = (keyword) => {
     return api.get('/cages/search', {
+        params: {
+            keyword
+        }
+    });
+};
+
+export const searchCagesWithParrots = (keyword) => {
+    return api.get('/cages/search-with-parrot-count', {
         params: {
             keyword
         }

@@ -1,13 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import {
-    List,
     Toast,
     Dialog,
     Form,
     Input,
     Button,
     FloatingBubble,
-    SwipeAction,
     Modal,
     SpinLoading,
     ErrorBlock,
@@ -15,10 +13,19 @@ import {
     SearchBar,
     Selector,
     InfiniteScroll,
-    Badge
+    Card,
+    Grid,
+    Tag
 } from 'antd-mobile';
 import { AddOutline, FilterOutline } from 'antd-mobile-icons';
-import { getCages, addCage, deleteCage, getSpeciesList, getCagesByLocation, searchCages } from '../api';
+import {
+    getCages,
+    addCage,
+    deleteCage,
+    getSpeciesList,
+    getCagesByLocation,
+    searchCagesWithParrots
+} from '../api';
 
 export default function CageManagement() {
     const [data, setData] = useState({
@@ -72,16 +79,14 @@ export default function CageManagement() {
 
     const handleSearch = async (value) => {
         setSearchText(value);
-        // 移除这里的自动搜索逻辑
     };
 
     const handleSearchSubmit = async () => {
         if (searchText) {
             try {
                 setLoading(true);
-                // 搜索时清除筛选数据
                 setSelectedSpecies([]);
-                const res = await searchCages(searchText);
+                const res = await searchCagesWithParrots(searchText);
                 setFilteredCages(res.data || []);
             } catch (error) {
                 Toast.show({ content: '搜索失败' });
@@ -89,7 +94,6 @@ export default function CageManagement() {
                 setLoading(false);
             }
         } else {
-            // 搜索框为空时恢复显示所有笼子
             setFilteredCages(data.records);
         }
     };
@@ -104,7 +108,6 @@ export default function CageManagement() {
                 const responses = await Promise.all(promises);
                 let result = responses.flatMap(res => res.data || []);
 
-                // 如果有搜索文本，再进行本地过滤
                 if (searchText) {
                     result = result.filter(cage =>
                         cage.cageCode.toLowerCase().includes(searchText.toLowerCase())
@@ -113,7 +116,6 @@ export default function CageManagement() {
 
                 setFilteredCages(result);
             } else {
-                // 没有选择品种时，显示所有笼子
                 setFilteredCages(data.records);
             }
         } catch (error) {
@@ -134,7 +136,6 @@ export default function CageManagement() {
                 hasMore: res.data.records.length >= pageSize
             }));
 
-            // 更新过滤结果
             if (selectedSpecies.length > 0) {
                 fetchFilteredCagesBySpecies();
             } else if (searchText) {
@@ -156,7 +157,6 @@ export default function CageManagement() {
             form.resetFields();
             setSpeciesValue([]);
             setShowForm(false);
-            // 添加后重新加载第一页
             const res = await getCages(1, pageSize);
             setData({
                 records: res.data.records,
@@ -180,7 +180,6 @@ export default function CageManagement() {
                 try {
                     await deleteCage(id);
                     Toast.show({ content: '删除成功' });
-                    // 删除后重新加载当前页
                     const res = await getCages(page, pageSize);
                     setData({
                         records: res.data.records,
@@ -188,7 +187,6 @@ export default function CageManagement() {
                         hasMore: res.data.records.length >= pageSize
                     });
 
-                    // 更新过滤结果
                     if (selectedSpecies.length > 0) {
                         fetchFilteredCagesBySpecies();
                     } else if (searchText) {
@@ -212,9 +210,13 @@ export default function CageManagement() {
         if (selectedSpecies.length > 0) {
             fetchFilteredCagesBySpecies();
         } else {
-            // 如果没有选择品种，则显示所有笼子
             setFilteredCages(data.records);
         }
+    };
+
+    const hanleOnClear = () => {
+        setSelectedSpecies([]);
+        setFilteredCages(data.records);
     };
 
     return (
@@ -241,23 +243,21 @@ export default function CageManagement() {
                     }}>
                         <SearchBar
                             placeholder="搜索笼子编号"
-                            onSearch={handleSearchSubmit}  // 仅在回车时触发
-                            onChange={handleSearch}       // 仅更新搜索文本状态
+                            onSearch={handleSearchSubmit}
+                            onChange={handleSearch}
+                            onClear={hanleOnClear}
                             value={searchText}
                             style={{ width: '100%' }}
                         />
-
 
                         <div style={{
                             display: 'flex',
                             alignItems: 'center',
                             gap: '1px'
                         }}>
-                            {/*<Badge content={`总计: ${data.total}`} color='primary' />*/}
                             <Button
                                 size='small'
                                 onClick={() => setFilterVisible(true)}
-                                // style={{ '--border-radius': '20px' }}
                             >
                                 <FilterOutline />
                             </Button>
@@ -272,35 +272,85 @@ export default function CageManagement() {
                         />
                     ) : (
                         <>
-                            <List header={
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <span>笼子列表</span>
+                            <div style={{ padding: '12px' }}>
+                                <div style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    marginBottom: '12px'
+                                }}>
+                                    <span style={{ fontWeight: 'bold' }}>笼子列表</span>
                                     <span style={{ color: '#888', fontSize: '14px'}}>
-                                        总计: {data.total}个笼子
+                                        总计: {data.total}个 | 查询出：{filteredCages.length}个
                                     </span>
                                 </div>
-                            }>
-                                {filteredCages.map((c) => (
-                                    <SwipeAction
-                                        key={c.id}
-                                        rightActions={[{
-                                            key: 'delete',
-                                            text: '删除',
-                                            color: 'danger',
-                                            onClick: () => handleDeleteCage(c.id),
-                                        }]}
-                                    >
-                                        <List.Item
-                                            onClick={() => {
-                                                window.location.href = `/parrot-web/cage/${c.id}/parrots`;
-                                            }}
-                                            description={`品种: ${c.location ? speciesList.find(s => s.id === parseInt(c.location))?.name || '未知' : '未知'}`}
-                                        >
-                                            {c.cageCode}
-                                        </List.Item>
-                                    </SwipeAction>
-                                ))}
-                            </List>
+
+                                {/* 修改为长方形卡片布局 */}
+                                <Grid columns={5} gap={8} style={{ '--gap-vertical': '12px' }}>
+                                    {filteredCages.map((cage) => (
+                                        <Grid.Item key={cage.id}>
+                                            <div
+                                                onLongPress={() => handleDeleteCage(cage.id)}
+                                                onClick={() => {
+                                                    window.location.href = `/parrot-web/cage/${cage.id}/parrots`;
+                                                }}
+                                                style={{
+                                                    touchAction: 'manipulation' // 改善移动端触摸体验
+                                                }}
+                                            >
+                                                <Card
+                                                    onClick={() => {
+                                                        window.location.href = `/parrot-web/cage/${cage.id}/parrots`;
+                                                    }}
+                                                    style={{
+                                                        '--background-color': cage.parrotCount > 0 ? '#e6f7e6' : '#f0f0f0',
+                                                        '--border-radius': '8px',
+                                                        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.08)',
+                                                        padding: 0,
+                                                        height: '100%',
+                                                        minHeight: '80px' // 设置最小高度
+                                                    }}
+                                                    bodyStyle={{
+                                                        padding: '8px',
+                                                        display: 'flex',
+                                                        flexDirection: 'column',
+                                                        justifyContent: 'space-between',
+                                                    }}
+                                                >
+                                                    <div style={{
+                                                        fontSize: '12px',
+                                                        fontWeight: 'bold',
+                                                        whiteSpace: 'nowrap',
+                                                        overflow: 'hidden',
+                                                        textOverflow: 'ellipsis',
+                                                        textAlign: 'center'
+                                                    }}>
+                                                        {speciesList.find(s => s.id === parseInt(cage.location))?.name || '未知'}
+                                                    </div>
+                                                    <div style={{
+                                                        fontSize: '14px',
+                                                        fontWeight: 'bold',
+                                                        textAlign: 'center',
+                                                        margin: '4px 0'
+                                                    }}>
+                                                        {cage.cageCode}
+                                                    </div>
+                                                    <Tag
+                                                        color={cage.parrotCount > 0 ? '#dbfbca' : '#c3c3c3'}
+                                                        style={{
+                                                            alignSelf: 'center',
+                                                            '--text-color': cage.parrotCount > 0 ? '#266705' : '#eceaea'
+                                                        }}
+                                                    >
+                                                        {cage.parrotCount || 0}只
+                                                    </Tag>
+                                                </Card>
+                                            </div>
+                                        </Grid.Item>
+                                    ))}
+                                </Grid>
+                            </div>
+
                             {selectedSpecies.length === 0 && !searchText && (
                                 <InfiniteScroll
                                     loadMore={loadMore}

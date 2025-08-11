@@ -20,7 +20,6 @@ export default function SearchParrot() {
         try {
             const res = await getAllCages();
             console.log('Fetched cages:', res.data)
-            // Ensure we're setting an array, even if the response is null/undefined
             setCages(Array.isArray(res?.data) ? res.data : []);
         } catch {
             Toast.show({ content: '获取笼子列表失败' });
@@ -32,7 +31,6 @@ export default function SearchParrot() {
         setLoading(true);
         try {
             const res = await getSpeciesList();
-            // Ensure we're setting an array, even if the response is null/undefined
             setSpeciesList(Array.isArray(res?.data) ? res.data : []);
         } catch {
             Toast.show({ content: '获取品种列表失败' });
@@ -41,13 +39,11 @@ export default function SearchParrot() {
     }
 
     function renderCageDisplay(cageId) {
-        // Add additional checks to ensure cages is an array
         if (!Array.isArray(cages) || !cageId) return '未知';
 
         const cage = cages.find(c => c.id === cageId);
         if (!cage) return '未知';
 
-        // Add checks for speciesList
         const species = Array.isArray(speciesList)
             ? speciesList.find(s => s.id === parseInt(cage.location))
             : null;
@@ -64,7 +60,6 @@ export default function SearchParrot() {
         setLoading(true);
         try {
             const res = await searchParrotsByRing(searchKey);
-            // Ensure we're setting an array, even if the response is null/undefined
             setResults(Array.isArray(res?.data) ? res.data : []);
         } catch {
             Toast.show('查询失败');
@@ -73,23 +68,13 @@ export default function SearchParrot() {
     };
 
     return (
-        <>
-            <NavBar
-                onBack={() => window.history.back()}
-                style={{
-                    backgroundColor: '#fff',
-                    color: '#000',
-                    borderBottom: '1px solid #f0f0f0',
-                }}
-            >
-                搜索
-            </NavBar>
-
+        <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
             <div
                 style={{
                     padding: '16px',
                     backgroundColor: '#fff',
                     borderBottom: '1px solid #f0f0f0',
+                    flexShrink: 0
                 }}
             >
                 <SearchBar
@@ -104,7 +89,7 @@ export default function SearchParrot() {
             {loading ? (
                 <div
                     style={{
-                        height: '100vh',
+                        flex: 1,
                         display: 'flex',
                         justifyContent: 'center',
                         alignItems: 'center',
@@ -113,23 +98,25 @@ export default function SearchParrot() {
                     <SpinLoading style={{ '--size': '48px' }} color="primary" />
                 </div>
             ) : results.length === 0 ? (
-                <div style={{ marginTop: '64px' }}>
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <ErrorBlock status="empty" title={"没有搜索到需要的鹦鹉"} />
                 </div>
             ) : (
-                <List>
-                    {results.map((p) => (
-                        <List.Item
-                            key={p.id}
-                            description={`品种: ${p.species ? (Array.isArray(speciesList) ? speciesList.find((s) => s.id === p.species)?.name : '未知') : '未知'}, 性别: ${p.gender || '未知'}, 笼子: 
-                                ${p.cageId ? renderCageDisplay(p.cageId) : '未知'
-                            }`}
-                        >
-                            {p.ringNumber}
-                        </List.Item>
-                    ))}
-                </List>
+                <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 70 }}>
+                    <List>
+                        {results.map((p) => (
+                            <List.Item
+                                key={p.id}
+                                description={`品种: ${p.species ? (Array.isArray(speciesList) ? speciesList.find((s) => s.id === p.species)?.name : '未知') : '未知'}, 性别: ${p.gender || '未知'}, 笼子: 
+                                    ${p.cageId ? renderCageDisplay(p.cageId) : '未知'
+                                }`}
+                            >
+                                {p.ringNumber}
+                            </List.Item>
+                        ))}
+                    </List>
+                </div>
             )}
-        </>
+        </div>
     );
 }

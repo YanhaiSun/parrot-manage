@@ -20,6 +20,25 @@ export default function ParrotForm({ onSubmit, initialValues, disableCageSelecti
     ];
 
     useEffect(() => {
+        if (initialValues) {
+            form.setFieldsValue({
+                ...initialValues,
+                species: initialValues.species,
+                gender: initialValues.gender,
+                cageId: initialValues.cageId,
+            });
+            setSpeciesValue([initialValues.species]);
+            setGenderValue([initialValues.gender]);
+            setCageValue([initialValues.cageId]);
+        } else {
+            form.resetFields();
+            setSpeciesValue([]);
+            setGenderValue([]);
+            setCageValue([]);
+        }
+    }, [initialValues]);  // 添加 initialValues 作为依赖
+
+    useEffect(() => {
         console.log('ParrotForm mounted with initialValues:', initialValues);
         fetchSpecies();
 
