@@ -1,6 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { NavBar, SearchBar, List, Toast, SpinLoading, ErrorBlock } from 'antd-mobile';
-import {getAllCages, getCages, getSpeciesList, searchParrotsByRing} from '../api/index.js';
+import {NavBar, SearchBar, List, Toast, SpinLoading, ErrorBlock, SwipeAction, Dialog, Modal} from 'antd-mobile';
+import {
+    addParrot,
+    deleteParrot,
+    getAllCages,
+    getCages,
+    getParrots,
+    getSpeciesList,
+    searchParrotsByRing, updateParrot
+} from '../api/index.js';
+import ParrotForm from "../components/ParrotForm.jsx";
 
 export default function SearchParrot() {
     const [searchKey, setSearchKey] = useState('');
@@ -8,6 +17,9 @@ export default function SearchParrot() {
     const [cages, setCages] = useState([]);
     const [speciesList, setSpeciesList] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [showForm, setShowForm] = useState(false);
+    const [editParrot, setEditParrot] = useState(null);
+
 
     // 初始化笼子列表
     useEffect(() => {
@@ -67,6 +79,83 @@ export default function SearchParrot() {
         setLoading(false);
     };
 
+    const renderDescription = (parrot) => {
+        return (
+            <div style={{
+                display: 'flex',
+                justifyContent: 'space-between'
+            }}>
+                <div>品种：{speciesList.find(s => s.id === parrot.species)?.name || '未知'}</div>
+                <div>性别：{parrot.gender}</div>
+                <div>笼子：{renderCageDisplay(parrot.cageId)}</div>
+            </div>
+        );
+    }
+
+    const openEditForm = (parrot) => {
+        console.log('Open edit form for parrot:', parrot)
+        setEditParrot({
+            ...parrot,
+            species: parrot.species,
+            gender: parrot.gender,
+            cageId: parrot.cageId
+        });
+        setShowForm(true);
+    };
+
+    const closeForm = () => {
+        setShowForm(false);
+        // 延迟100ms清空表单，确保弹窗完全关闭后再执行
+        setTimeout(() => {
+            setEditParrot(null);
+        }, 500);
+    };
+
+    const handleDeleteParrot = async (id) => {
+        Modal.confirm({
+            content: '确定要删除这只鹦鹉吗？',
+            onConfirm: async () => {
+                try {
+                    await deleteParrot(id);
+                    Toast.show({ content: '删除成功' });
+                    // 删除后重新加载当前页
+                    const res = await searchParrotsByRing(searchKey);
+                    setResults(Array.isArray(res?.data) ? res.data : []);
+                } catch {
+                    Toast.show({ content: '删除失败' });
+                }
+            },
+        });
+    };
+
+    const handleAddParrot = async (data) => {
+        try {
+            await addParrot(data);
+            Toast.show({ content: '添加成功' });
+            setShowForm(false);
+            const res =  await searchParrotsByRing(searchKey);
+            // 修改这里：list -> records
+            setResults(Array.isArray(res?.data) ? res.data : []);
+        } catch {
+            Toast.show({ content: '添加失败' });
+        }
+    };
+
+    const handleUpdateParrot = async (data) => {
+        try {
+            await updateParrot(editParrot.id, data);
+            Toast.show({ content: '更新成功' });
+            setShowForm(false);
+            setEditParrot(null);
+            // 更新后重新加载当前页
+            const res = await searchParrotsByRing(searchKey);
+            setResults(Array.isArray(res?.data) ? res.data : []);
+        } catch {
+            Toast.show({ content: '更新失败' });
+        }
+    };
+
+
     return (
         <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
             <div
@@ -105,18 +194,58 @@ export default function SearchParrot() {
                 <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 70 }}>
                     <List>
                         {results.map((p) => (
-                            <List.Item
+                            <SwipeAction
                                 key={p.id}
-                                description={`品种: ${p.species ? (Array.isArray(speciesList) ? speciesList.find((s) => s.id === p.species)?.name : '未知') : '未知'}, 性别: ${p.gender || '未知'}, 笼子: 
-                                    ${p.cageId ? renderCageDisplay(p.cageId) : '未知'
-                                }`}
+                                rightActions={[
+                                    {
+                                        key: 'edit',
+                                        text: '编辑',
+                                        color: 'primary',
+                                        onClick: () => openEditForm(p),
+                                    },
+                                    {
+                                        key: 'delete',
+                                        text: '删除',
+                                        color: 'danger',
+                                        onClick: () => handleDeleteParrot(p.id),
+                                    },
+                                ]}
                             >
-                                {p.ringNumber}
-                            </List.Item>
+                                <List.Item
+                                    key={p.id}
+                                    // description={`品种: ${p.species ? (Array.isArray(speciesList) ? speciesList.find((s) => s.id === p.species)?.name : '未知') : '未知'}, 性别: ${p.gender || '未知'}, 笼子:
+                                    //     ${p.cageId ? renderCageDisplay(p.cageId) : '未知'
+                                    // }`}
+                                    description={renderDescription(p)}
+                                >
+                                    {p.ringNumber}
+                                </List.Item>
+                            </SwipeAction>
                         ))}
                     </List>
                 </div>
             )}
+
+            <Dialog
+                visible={showForm}
+                onClose={closeForm}
+                title={editParrot ? '编辑鹦鹉' : '添加鹦鹉'}
+                content={
+                    <ParrotForm
+                        key={editParrot?.id || 'create'}
+                        onSubmit={editParrot ? handleUpdateParrot : handleAddParrot}
+                        initialValues={editParrot ? {
+                            ...editParrot,
+                            species: editParrot.species,
+                            gender: editParrot.gender,
+                            cageId: editParrot.cageId
+                        } : {}}
+                        speciesList={speciesList}
+                        cages={cages}
+                    />
+                }
+                closeOnMaskClick={true}
+            />
         </div>
     );
 }

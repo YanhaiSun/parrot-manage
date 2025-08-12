@@ -1,10 +1,16 @@
+import React, { useLayoutEffect, useState, useMemo } from 'react';
 import { Form, Input, Button, Picker, Toast } from 'antd-mobile';
-import { useEffect, useState } from 'react';
-import { getSpeciesList, getCagesByLocation } from '../api';
+import { getCagesByLocation } from '../api';
 
-export default function ParrotForm({ onSubmit, initialValues, disableCageSelection = false, forceSpecies }) {
+const ParrotForm = React.memo(({
+                                   onSubmit,
+                                   initialValues,
+                                   disableCageSelection = false,
+                                   forceSpecies,
+                                   speciesList = [],
+                                   cages = []
+                               }) => {
     const [form] = Form.useForm();
-    const [speciesList, setSpeciesList] = useState([]);
     const [speciesVisible, setSpeciesVisible] = useState(false);
     const [speciesValue, setSpeciesValue] = useState([]);
     const [genderVisible, setGenderVisible] = useState(false);
@@ -14,12 +20,12 @@ export default function ParrotForm({ onSubmit, initialValues, disableCageSelecti
     const [cageValue, setCageValue] = useState([]);
     const [cageVisible, setCageVisible] = useState(false);
 
-    const genderOptions = [
+    const genderOptions = useMemo(() => [
         { label: '公', value: '公' },
         { label: '母', value: '母' },
-    ];
+    ], []);
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         if (initialValues) {
             form.setFieldsValue({
                 ...initialValues,
@@ -30,85 +36,44 @@ export default function ParrotForm({ onSubmit, initialValues, disableCageSelecti
             setSpeciesValue([initialValues.species]);
             setGenderValue([initialValues.gender]);
             setCageValue([initialValues.cageId]);
+
+            // 如果已经有品种值，立即过滤笼子
+            if (initialValues.species) {
+                filterCages(initialValues.species);
+            }
         } else {
             form.resetFields();
             setSpeciesValue([]);
             setGenderValue([]);
             setCageValue([]);
         }
-    }, [initialValues]);  // 添加 initialValues 作为依赖
+    }, [initialValues]);
 
-    useEffect(() => {
-        console.log('ParrotForm mounted with initialValues:', initialValues);
-        fetchSpecies();
-
+    useLayoutEffect(() => {
         if (forceSpecies) {
             setSpeciesValue([parseInt(forceSpecies)]);
             form.setFieldsValue({ species: parseInt(forceSpecies) });
+            filterCages(parseInt(forceSpecies));
         }
     }, [forceSpecies]);
 
-    useEffect(() => {
-        // 只有当选择了品种时才获取笼子列表
-        if (speciesValue.length > 0 && speciesValue[0]) {
-            fetchFilteredCages();
-        } else {
-            // 如果没有选择品种，清空笼子列表
+    const filterCages = (speciesId) => {
+        if (!speciesId) {
             setFilteredCages([]);
+            return;
         }
-    }, [speciesValue]);
 
-    const fetchSpecies = async () => {
-        setLoading(true);
-        try {
-            const speciesRes = await getSpeciesList();
-            setSpeciesList(speciesRes.data || []);
-
-            if (initialValues) {
-                form.setFieldsValue({
-                    ...initialValues,
-                    species: initialValues.species,
-                    gender: initialValues.gender,
-                    cageId: initialValues.cageId,
-                });
-                setSpeciesValue([initialValues.species]);
-                setGenderValue([initialValues.gender]);
-                setCageValue([initialValues.cageId]);
-            }
-        } catch (error) {
-            Toast.show({ content: '获取品种列表失败', icon: 'fail' });
-        } finally {
-            setLoading(false);
-        }
+        const filtered = cages.filter(cage => parseInt(cage.location) === speciesId);
+        setFilteredCages(filtered);
     };
 
-    const fetchFilteredCages = async () => {
-        try {
-            setLoading(true);
-            const speciesId = speciesValue[0];
-
-            // 确保品种ID有效
-            if (!speciesId) {
-                setFilteredCages([]);
-                return;
-            }
-
-            const res = await getCagesByLocation(speciesId);
-            setFilteredCages(res.data || []);
-
-            if (initialValues?.cageId) {
-                const currentCage = res.data.find(c => c.id === initialValues.cageId);
-                if (!currentCage) {
-                    setCageValue([]);
-                    form.setFieldsValue({ cageId: undefined });
-                }
-            }
-        } catch (error) {
-            Toast.show({ content: '获取笼子列表失败', icon: 'fail' });
-            setFilteredCages([]);
-        } finally {
-            setLoading(false);
-        }
+    const handleSpeciesChange = (value) => {
+        setSpeciesValue(value);
+        form.setFieldsValue({ species: value[0] });
+        filterCages(value[0]);
+        // 清除已选的笼子
+        setCageValue([]);
+        form.setFieldsValue({ cageId: undefined });
     };
 
     function renderCageDisplay() {
@@ -185,11 +150,7 @@ export default function ParrotForm({ onSubmit, initialValues, disableCageSelecti
                         visible={speciesVisible}
                         onClose={() => setSpeciesVisible(false)}
                         value={speciesValue}
-                        onConfirm={(v) => {
-                            setSpeciesVisible(false);
-                            setSpeciesValue(v);
-                            form.setFieldsValue({ species: v[0] });
-                        }}
+                        onConfirm={handleSpeciesChange}
                     />
                 )}
             </Form.Item>
@@ -259,4 +220,6 @@ export default function ParrotForm({ onSubmit, initialValues, disableCageSelecti
             </Form.Item>
         </Form>
     );
-}
+});
+
+export default ParrotForm;

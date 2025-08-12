@@ -34,40 +34,53 @@ export default function ParrotManagement() {
     const [hasMore, setHasMore] = useState(true);
     const [page, setPage] = useState(1);
     const [total, setTotal] = useState(0);
-    const pageSize = 50; // 每页数量
+    const pageSize = 50;
 
+    // 预加载基础数据
     useEffect(() => {
+        const fetchInitialData = async () => {
+            try {
+                setLoading(true);
+                const [cagesRes, speciesRes] = await Promise.all([
+                    getCages(),
+                    getSpeciesList(),
+                ]);
+                setCages(cagesRes.data.records || cagesRes.data.list);
+                setSpeciesList(speciesRes.data);
+            } catch {
+                Toast.show({ content: '获取基础数据失败' });
+            }
+        };
         fetchInitialData();
     }, []);
 
-    const fetchInitialData = async () => {
+    // 加载鹦鹉数据
+    useEffect(() => {
+        if (speciesList.length > 0) {
+            fetchParrotData();
+        }
+    }, [speciesList]);
+
+    const fetchParrotData = async () => {
         try {
-            setLoading(true);
-            const [parrotsRes, cagesRes, speciesRes] = await Promise.all([
-                getParrots(1, pageSize),
-                getCages(),
-                getSpeciesList(),
-            ]);
-            setParrots(parrotsRes.data.records); // 修改这里：list -> records
+            const parrotsRes = await getParrots(1, pageSize);
+            setParrots(parrotsRes.data.records);
             setTotal(parrotsRes.data.total);
-            setCages(cagesRes.data.records || cagesRes.data.list); // 兼容两种格式
-            setSpeciesList(speciesRes.data);
-            setHasMore(parrotsRes.data.current < parrotsRes.data.pages); // 修改这里：hasNextPage -> current < pages
+            setHasMore(parrotsRes.data.current < parrotsRes.data.pages);
         } catch {
-            Toast.show({ content: '获取数据失败' });
+            Toast.show({ content: '获取鹦鹉数据失败' });
         } finally {
             setLoading(false);
         }
     };
 
-    // 加载更多数据
     const loadMore = async () => {
         try {
             const nextPage = page + 1;
             const res = await getParrots(nextPage, pageSize);
-            setParrots([...parrots, ...res.data.records]); // 修改这里：list -> records
+            setParrots([...parrots, ...res.data.records]);
             setPage(nextPage);
-            setHasMore(res.data.current < res.data.pages); // 修改这里：hasNextPage -> current < pages
+            setHasMore(res.data.current < res.data.pages);
         } catch (error) {
             Toast.show({ content: '加载更多失败' });
         }
@@ -78,12 +91,11 @@ export default function ParrotManagement() {
             await addParrot(data);
             Toast.show({ content: '添加成功' });
             setShowForm(false);
-            // 添加后重新加载第一页
             const res = await getParrots(1, pageSize);
-            setParrots(res.data.records); // 修改这里：list -> records
+            setParrots(res.data.records);
             setTotal(res.data.total);
             setPage(1);
-            setHasMore(res.data.current < res.data.pages); // 修改这里：hasNextPage -> current < pages
+            setHasMore(res.data.current < res.data.pages);
         } catch {
             Toast.show({ content: '添加失败' });
         }
@@ -95,11 +107,10 @@ export default function ParrotManagement() {
             Toast.show({ content: '更新成功' });
             setShowForm(false);
             setEditParrot(null);
-            // 更新后重新加载当前页
             const res = await getParrots(page, pageSize);
-            setParrots(res.data.records); // 修改这里：list -> records
+            setParrots(res.data.records);
             setTotal(res.data.total);
-            setHasMore(res.data.current < res.data.pages); // 修改这里：hasNextPage -> current < pages
+            setHasMore(res.data.current < res.data.pages);
         } catch {
             Toast.show({ content: '更新失败' });
         }
@@ -112,11 +123,10 @@ export default function ParrotManagement() {
                 try {
                     await deleteParrot(id);
                     Toast.show({ content: '删除成功' });
-                    // 删除后重新加载当前页
                     const res = await getParrots(page, pageSize);
-                    setParrots(res.data.records); // 修改这里：list -> records
+                    setParrots(res.data.records);
                     setTotal(res.data.total);
-                    setHasMore(res.data.current < res.data.pages); // 修改这里：hasNextPage -> current < pages
+                    setHasMore(res.data.current < res.data.pages);
                 } catch {
                     Toast.show({ content: '删除失败' });
                 }
@@ -143,8 +153,24 @@ export default function ParrotManagement() {
 
     const closeForm = () => {
         setShowForm(false);
-        setEditParrot(null);
+        // 延迟100ms清空表单，确保弹窗完全关闭后再执行
+        setTimeout(() => {
+            setEditParrot(null);
+        }, 500);
     };
+
+    const renderDescription = (parrot) => {
+        return (
+            <div style={{
+                display: 'flex',
+                justifyContent: 'space-between'
+            }}>
+                <div>品种：{speciesList.find(s => s.id === parrot.species)?.name || '未知'}</div>
+                <div>性别：{parrot.gender}</div>
+                <div>笼子：{renderCageDisplay(parrot.cageId)}</div>
+            </div>
+        );
+    }
 
     return (
         <>
@@ -188,7 +214,7 @@ export default function ParrotManagement() {
                                 ]}
                             >
                                 <List.Item
-                                    description={`品种: ${speciesList.find(s => s.id === p.species)?.name || '未知'}, 性别: ${p.gender}, 笼子: ${p.cageId ? renderCageDisplay(p.cageId) : '未知'}`}
+                                    description={renderDescription(p)}
                                 >
                                     {p.ringNumber}
                                 </List.Item>
@@ -214,18 +240,18 @@ export default function ParrotManagement() {
                 onClose={closeForm}
                 title={editParrot ? '编辑鹦鹉' : '添加鹦鹉'}
                 content={
-                    showForm && (  // 添加条件渲染，确保每次打开都是新实例
-                        <ParrotForm
-                            key={editParrot?.id || 'create'} // 添加 key 强制重新渲染
-                            onSubmit={editParrot ? handleUpdateParrot : handleAddParrot}
-                            initialValues={editParrot ? {
-                                ...editParrot,
-                                species: editParrot.species,
-                                gender: editParrot.gender,
-                                cageId: editParrot.cageId
-                            } : {}}
-                        />
-                    )
+                    <ParrotForm
+                        key={editParrot?.id || 'create'}
+                        onSubmit={editParrot ? handleUpdateParrot : handleAddParrot}
+                        initialValues={editParrot ? {
+                            ...editParrot,
+                            species: editParrot.species,
+                            gender: editParrot.gender,
+                            cageId: editParrot.cageId
+                        } : {}}
+                        speciesList={speciesList}
+                        cages={cages}
+                    />
                 }
                 closeOnMaskClick={true}
             />
