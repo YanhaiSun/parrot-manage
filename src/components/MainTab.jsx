@@ -2,7 +2,7 @@ import {TabBar, SafeArea} from 'antd-mobile'
 import {
     AppOutline, HistogramOutline, SearchOutline, StarOutline, UnorderedListOutline,
 } from 'antd-mobile-icons'
-import {useLocation, useNavigate, Routes, Route} from 'react-router-dom'
+import {useLocation, useNavigate, Routes, Route, Navigate} from 'react-router-dom'
 import ParrotPage from '../pages/ParrotManagement'
 import CagePage from '../pages/CageManagement'
 import SpeciesPage from "../pages/SpeciesManagement";
@@ -12,11 +12,6 @@ import ParrotStatistics from "../pages/ParrotStatistics.jsx";
 import {useEffect, useState} from "react";
 
 const tabs = [
-    // {
-    //     key: '/parrot-web/parrots',
-    //     title: '统计',
-    //     icon: <StarOutline />,
-    // },
     {
         key: '/parrot-web/parrot-statistics',
         title: '统计',
@@ -37,13 +32,19 @@ const tabs = [
         title: '搜索',
         icon: <SearchOutline/>,
     }
-
 ]
 
 export default function MainTab() {
     const location = useLocation()
     const navigate = useNavigate()
     const {pathname} = location
+
+    // 添加默认路由重定向
+    useEffect(() => {
+        if (pathname === '/parrot-web' || pathname === '/parrot-web/') {
+            navigate('/parrot-web/parrot-statistics')
+        }
+    }, [pathname, navigate])
 
     return (
         <div style={{
@@ -77,7 +78,9 @@ export default function MainTab() {
                     <Route path="/parrot-web/search" element={<SearchPage/>}/>
                     <Route path="/parrot-web/cage/:cageId/parrots" element={<CageParrotList/>}/>
                     <Route path="/parrot-web/parrot-statistics" element={<ParrotStatistics/>}/>
-                    <Route path="/parrot-web/*" element={<ParrotPage/>}/>
+                    {/* 添加默认重定向 */}
+                    <Route path="/parrot-web" element={<Navigate to="/parrot-web/parrot-statistics" replace />} />
+                    <Route path="/parrot-web/*" element={<ParrotStatistics/>}/>
                 </Routes>
             </div>
 
