@@ -1,0 +1,112 @@
+.statistics-container {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.loading-container {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.content-container {
+    flex: 1;
+    padding: 12px;
+    overflow-y: auto;
+}
+
+.tab-title {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.stat-card {
+    text-align: center;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card .adm-card-header {
+    font-size: 14px;
+    color: #666;
+    justify-content: center;
+}
+
+.stat-card .adm-card-body {
+    font-size: 20px;
+    font-weight: bold;
+    padding: 12px;
+    text-align: center;
+}
+
+.gender-by-species {
+    padding: 12px;
+}
+
+.gender-by-species .adm-list-item-content {
+    align-items: flex-start;
+}
+
+.gender-by-species .adm-list-item-content-main {
+    display: flex;
+    flex-direction: column;
+}
+
+.gender-by-species .adm-list-item-description {
+    margin-top: 4px;
+    color: #666;
+    font-size: 14px;
+}
+
+/* 添加到 Statistics.css */
+.gender-distribution {
+    width: 100%;
+}
+
+.species-total {
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: #333;
+}
+
+.gender-bars {
+    display: flex;
+    flex-direction: row;
+    gap: 6px;
+}
+
+.gender-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+}
+
+.gender-bar.male {
+    color: #1890ff;
+}
+
+.gender-bar.female {
+    color: #ff4d4f;
+}
+
+.progress-bar {
+    height: 16px;
+    border-radius: 8px;
+    background-color: currentColor;
+    opacity: 0.3;
+    transition: width 0.3s ease;
+}
+
+.gender-bar span:first-child {
+    width: 80px;
+    text-align: right;
+}
+
+.gender-bar span:last-child {
+    width: 40px;
+    text-align: left;
+}

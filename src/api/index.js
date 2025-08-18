@@ -1,14 +1,22 @@
 import axios from 'axios';
 
 const api = axios.create({
-    baseURL: 'https://suduan.top/parrot/api', // 后端接口地址
-    // baseURL: 'http://localhost:18976/api',
+    // baseURL: 'https://suduan.top/parrot/api', // 后端接口地址
+    baseURL: 'http://localhost:18976/api',
     timeout: 5000,
 });
 
 // 修改 getParrots 方法，添加分页参数
 export const getParrots = (page = 1, pageSize = 50) =>
     api.get(`/parrots?pageNum=${page}&pageSize=${pageSize}`);
+
+// 获取所有鹦鹉（不分页）
+export const getAllParrots = () =>
+    api.get(`/parrots`, {
+        params: {
+            all: true
+        },
+    });
 
 export const addParrot = (data) => api.post('/parrots', data);
 
@@ -44,6 +52,10 @@ export const getCagesByLocation = (location) => {
     return api.get(`/cages/by-location/${location}`);
 }
 
+// list-with-parrot-count
+export const getCagesWithParrotCountAll = () => {
+    return api.get('/cages/list-with-parrot-count');
+}
 export const searchCages = (keyword) => {
     return api.get('/cages/search', {
         params: {

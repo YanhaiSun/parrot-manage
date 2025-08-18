@@ -1,42 +1,49 @@
-import { TabBar, SafeArea } from 'antd-mobile'
+import {TabBar, SafeArea} from 'antd-mobile'
 import {
-    AppOutline, SearchOutline, StarOutline, UnorderedListOutline,
+    AppOutline, HistogramOutline, SearchOutline, StarOutline, UnorderedListOutline,
 } from 'antd-mobile-icons'
-import { useLocation, useNavigate, Routes, Route } from 'react-router-dom'
+import {useLocation, useNavigate, Routes, Route} from 'react-router-dom'
 import ParrotPage from '../pages/ParrotManagement'
 import CagePage from '../pages/CageManagement'
 import SpeciesPage from "../pages/SpeciesManagement";
 import SearchPage from '../pages/SearchParrot'
 import CageParrotList from "../pages/CageParrotList.jsx";
+import ParrotStatistics from "../pages/ParrotStatistics.jsx";
 import {useEffect, useState} from "react";
 
 const tabs = [
+    // {
+    //     key: '/parrot-web/parrots',
+    //     title: '统计',
+    //     icon: <StarOutline />,
+    // },
     {
-        key: '/parrot-web/parrots',
-        title: '鹦鹉',
-        icon: <StarOutline />,
+        key: '/parrot-web/parrot-statistics',
+        title: '统计',
+        icon: <HistogramOutline />
     },
     {
         key: '/parrot-web/cages',
         title: '笼子',
-        icon: <AppOutline />,
+        icon: <AppOutline/>,
     },
     {
         key: '/parrot-web/species',
         title: '品种',
-        icon: <UnorderedListOutline />,
+        icon: <UnorderedListOutline/>,
     },
     {
         key: '/parrot-web/search',
         title: '搜索',
-        icon: <SearchOutline />,
-    },
+        icon: <SearchOutline/>,
+    }
+
 ]
 
 export default function MainTab() {
     const location = useLocation()
     const navigate = useNavigate()
-    const { pathname } = location
+    const {pathname} = location
 
     return (
         <div style={{
@@ -64,12 +71,13 @@ export default function MainTab() {
                 }
             }}>
                 <Routes>
-                    <Route path="/parrot-web/parrots" element={<ParrotPage />} />
-                    <Route path="/parrot-web/cages" element={<CagePage />} />
-                    <Route path="/parrot-web/species" element={<SpeciesPage />} />
-                    <Route path="/parrot-web/search" element={<SearchPage />} />
-                    <Route path="/parrot-web/cage/:cageId/parrots" element={<CageParrotList />} />
-                    <Route path="/parrot-web/*" element={<ParrotPage />} />
+                    <Route path="/parrot-web/parrots" element={<ParrotPage/>}/>
+                    <Route path="/parrot-web/cages" element={<CagePage/>}/>
+                    <Route path="/parrot-web/species" element={<SpeciesPage/>}/>
+                    <Route path="/parrot-web/search" element={<SearchPage/>}/>
+                    <Route path="/parrot-web/cage/:cageId/parrots" element={<CageParrotList/>}/>
+                    <Route path="/parrot-web/parrot-statistics" element={<ParrotStatistics/>}/>
+                    <Route path="/parrot-web/*" element={<ParrotPage/>}/>
                 </Routes>
             </div>
 
@@ -94,11 +102,11 @@ export default function MainTab() {
                     }}
                 >
                     {tabs.map(item => (
-                        <TabBar.Item key={item.key} icon={item.icon} title={item.title} />
+                        <TabBar.Item key={item.key} icon={item.icon} title={item.title}/>
                     ))}
                 </TabBar>
             </div>
-            <SafeArea position='bottom' />
+            <SafeArea position='bottom'/>
         </div>
     )
 }
