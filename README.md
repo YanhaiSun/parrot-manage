@@ -87,21 +87,22 @@ src/
 H5页面具有通用性，可以在小程序中使用
 
 ## 小程序内嵌H5预览
-![c7b4ba40cefc70fc5b705a59d0e770b4.jpg](../../WechatFile/xwechat_files/wxid_p8jean9leucl12_4de9/temp/RWTemp/2025-08/9e20f478899dc29eb19741386f9343c8/c7b4ba40cefc70fc5b705a59d0e770b4.jpg)
-![a83b80d087415167b21fa0fa4ccddcd1.jpg](../../WechatFile/xwechat_files/wxid_p8jean9leucl12_4de9/temp/RWTemp/2025-08/9e20f478899dc29eb19741386f9343c8/a83b80d087415167b21fa0fa4ccddcd1.jpg)
-![c263b28f373188c1b485f094a89f149a.jpg](../../WechatFile/xwechat_files/wxid_p8jean9leucl12_4de9/temp/RWTemp/2025-08/9e20f478899dc29eb19741386f9343c8/c263b28f373188c1b485f094a89f149a.jpg)
-![79fff9e9438ecc00cbeddacaeafe614a.jpg](../../WechatFile/xwechat_files/wxid_p8jean9leucl12_4de9/temp/RWTemp/2025-08/9e20f478899dc29eb19741386f9343c8/79fff9e9438ecc00cbeddacaeafe614a.jpg)
-![66c7f2980e5ca94d9fe6cee31af34f92.jpg](../../WechatFile/xwechat_files/wxid_p8jean9leucl12_4de9/temp/RWTemp/2025-08/9e20f478899dc29eb19741386f9343c8/66c7f2980e5ca94d9fe6cee31af34f92.jpg)
-![8325289df5fa158fef5de6a10d28b253.jpg](../../WechatFile/xwechat_files/wxid_p8jean9leucl12_4de9/temp/RWTemp/2025-08/9e20f478899dc29eb19741386f9343c8/8325289df5fa158fef5de6a10d28b253.jpg)
-![5238144ac10b5bcb99e6c8dd6f21f50a.jpg](../../WechatFile/xwechat_files/wxid_p8jean9leucl12_4de9/temp/RWTemp/2025-08/9e20f478899dc29eb19741386f9343c8/5238144ac10b5bcb99e6c8dd6f21f50a.jpg)
-![913bb04593305be4d9ca9ff9c11b2c43.jpg](../../WechatFile/xwechat_files/wxid_p8jean9leucl12_4de9/temp/RWTemp/2025-08/9e20f478899dc29eb19741386f9343c8/913bb04593305be4d9ca9ff9c11b2c43.jpg)
-![7f097e24cba9739121eb6f74c2d6add2.jpg](../../WechatFile/xwechat_files/wxid_p8jean9leucl12_4de9/temp/RWTemp/2025-08/9e20f478899dc29eb19741386f9343c8/7f097e24cba9739121eb6f74c2d6add2.jpg)
-
+![小程序内嵌H5预览](./images/数据统计-概览.jpg)
+![小程序内嵌H5预览](./images/数据统计-品种分布.jpg)
+![小程序内嵌H5预览](./images/数据统计-性别分布.jpg)
+![小程序内嵌H5预览](./images/笼子列表.jpg)
+![小程序内嵌H5预览](./images/笼子内鹦鹉列表.jpg)
+![小程序内嵌H5预览](./images/笼子内鹦鹉列表-编辑.jpg)
+![小程序内嵌H5预览](./images/品种筛选笼子.jpg)
+![小程序内嵌H5预览](./images/品种.jpg)
+![小程序内嵌H5预览](./images/搜索.jpg)
 ## 技术支持联系
-![e52dbdb6e7db18a6d42bdd48ba8ba625.jpg](../../WechatFile/xwechat_files/wxid_p8jean9leucl12_4de9/temp/RWTemp/2025-08/9e20f478899dc29eb19741386f9343c8/e52dbdb6e7db18a6d42bdd48ba8ba625.jpg)
+
+如果你在使用过程中遇到问题或有任何建议，欢迎通过以下方式联系我：
+![wx](./images/wx.jpg)
 
 ## 给个Star支持一下
 如果你觉得这个项目对你有帮助，欢迎给个 Star ⭐️ 支持一下
 
 ## 请作者喝杯咖啡
-![b90c1e3ebcc5e0f7fb3eb6d63704ce82.jpg](../../WechatFile/xwechat_files/wxid_p8jean9leucl12_4de9/temp/RWTemp/2025-08/9e20f478899dc29eb19741386f9343c8/b90c1e3ebcc5e0f7fb3eb6d63704ce82.jpg)
+![微信](./images/咖啡.jpg)
