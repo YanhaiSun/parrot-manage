@@ -83,26 +83,33 @@ src/
 
 ## 特性
 
-项目使用了 Ant Design Mobile 5.x 作为 UI 框架，提供了现代化的移动端用户界面。ECharts 用于数据可视化，展示鹦鹉分布和笼舍使用情况等统计信息。
+项目使用了 Ant Design Mobile 5.x 作为 UI 框架，提供了现代化的移动端用户界面。ECharts 用于数据可视化，展示鹦鹉分布���笼舍使用情况等统计信息。
 H5页面具有通用性，可以在小程序中使用
 
 ## 小程序内嵌H5预览
-![小程序内嵌H5预览](./images/数据统计-概览.jpg)
-![小程序内嵌H5预览](./images/数据统计-品种分布.jpg)
-![小程序内嵌H5预览](./images/数据统计-性别分布.jpg)
-![小程序内嵌H5预览](./images/笼子列表.jpg)
-![小程序内嵌H5预览](./images/笼子内鹦鹉列表.jpg)
-![小程序内嵌H5预览](./images/笼子内鹦鹉列表-编辑.jpg)
-![小程序内嵌H5预览](./images/品种筛选笼子.jpg)
-![小程序内嵌H5预览](./images/品种.jpg)
-![小程序内嵌H5预览](./images/搜索.jpg)
+<div align="center">
+  <img src="./images/数据统计-概览.jpg" alt="数据统计-概览" width="300" />
+  <img src="./images/数据统计-品种分布.jpg" alt="数据统计-品种分布" width="300" />
+  <img src="./images/数据统计-性别分布.jpg" alt="数据统计-性别分布" width="300" />
+  <img src="./images/笼子列表.jpg" alt="笼子列表" width="300" />
+  <img src="./images/笼子内鹦鹉列表.jpg" alt="笼子内鹦鹉列表" width="300" />
+  <img src="./images/笼子���鹦鹉列表-编辑.jpg" alt="笼子内鹦鹉列表-编辑" width="300" />
+  <img src="./images/品种筛选笼子.jpg" alt="品种筛选笼子" width="300" />
+  <img src="./images/品种.jpg" alt="品种" width="300" />
+  <img src="./images/搜索.jpg" alt="搜索" width="300" />
+</div>
+
 ## 技术支持联系
 
 如果你在使用过程中遇到问题或有任何建议，欢迎通过以下方式联系我：
-![wx](./images/wx.jpg)
+<div align="center">
+  <img src="./images/wx.jpg" alt="微信二维码" width="200" />
+</div>
 
 ## 给个Star支持一下
-如果你觉得这个项目对你有帮助，欢迎给个 Star ⭐️ 支持一下
+如果你觉得这个项目对��有帮助，欢迎给个 Star ⭐️ 支持一下
 
 ## 请作者喝杯咖啡
-![微信](./images/咖啡.jpg)
+<div align="center">
+  <img src="./images/咖啡.jpg" alt="微信打赏" width="200" />
+</div>
