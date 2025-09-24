@@ -1,6 +1,6 @@
 import {TabBar, SafeArea} from 'antd-mobile'
 import {
-    AppOutline, HistogramOutline, SearchOutline, StarOutline, UnorderedListOutline,
+    AppOutline, HistogramOutline, SearchOutline, StarOutline, UnorderedListOutline, UserOutline,
 } from 'antd-mobile-icons'
 import {useLocation, useNavigate, Routes, Route, Navigate} from 'react-router-dom'
 import ParrotPage from '../pages/ParrotManagement'
@@ -9,6 +9,7 @@ import SpeciesPage from "../pages/SpeciesManagement";
 import SearchPage from '../pages/SearchParrot'
 import CageParrotList from "../pages/CageParrotList.jsx";
 import ParrotStatistics from "../pages/ParrotStatistics.jsx";
+import Profile from "../pages/Profile.jsx";
 import {useEffect, useState} from "react";
 
 const tabs = [
@@ -31,6 +32,11 @@ const tabs = [
         key: '/parrot-web/search',
         title: '搜索',
         icon: <SearchOutline/>,
+    },
+    {
+        key: '/parrot-web/profile',
+        title: '我的',
+        icon: <UserOutline/>,
     }
 ]
 
@@ -42,7 +48,7 @@ export default function MainTab() {
     // 添加默认路由重定向
     useEffect(() => {
         if (pathname === '/parrot-web' || pathname === '/parrot-web/') {
-            navigate('/parrot-web/parrot-statistics')
+            navigate('/parrot-web/parrot-statistics', { replace: true })
         }
     }, [pathname, navigate])
 
@@ -72,15 +78,15 @@ export default function MainTab() {
                 }
             }}>
                 <Routes>
-                    <Route path="/parrot-web/parrots" element={<ParrotPage/>}/>
-                    <Route path="/parrot-web/cages" element={<CagePage/>}/>
-                    <Route path="/parrot-web/species" element={<SpeciesPage/>}/>
-                    <Route path="/parrot-web/search" element={<SearchPage/>}/>
-                    <Route path="/parrot-web/cage/:cageId/parrots" element={<CageParrotList/>}/>
-                    <Route path="/parrot-web/parrot-statistics" element={<ParrotStatistics/>}/>
-                    {/* 添加默认重定向 */}
-                    <Route path="/parrot-web" element={<Navigate to="/parrot-web/parrot-statistics" replace />} />
-                    <Route path="/parrot-web/*" element={<ParrotStatistics/>}/>
+                    <Route path="parrots" element={<ParrotPage/>}/>
+                    <Route path="cages" element={<CagePage/>}/>
+                    <Route path="species" element={<SpeciesPage/>}/>
+                    <Route path="search" element={<SearchPage/>}/>
+                    <Route path="profile" element={<Profile/>}/>
+                    <Route path="cage/:cageId/parrots" element={<CageParrotList/>}/>
+                    <Route path="parrot-statistics" element={<ParrotStatistics/>}/>
+                    <Route index element={<Navigate to="parrot-statistics" replace />} />
+                    <Route path="*" element={<ParrotStatistics/>}/>
                 </Routes>
             </div>
 
