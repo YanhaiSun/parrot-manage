@@ -173,16 +173,16 @@ export default function Login() {
                 }}
             />
 
-            {/* 背景遮罩 */}
-            <div style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundColor: 'rgba(0, 0, 0, 0.25)',
-                zIndex: 1
-            }} />
+            {/*/!* 背景遮罩 *!/*/}
+            {/*<div style={{*/}
+            {/*    position: 'absolute',*/}
+            {/*    top: 0,*/}
+            {/*    left: 0,*/}
+            {/*    right: 0,*/}
+            {/*    bottom: 0,*/}
+            {/*    backgroundColor: 'rgba(0, 0, 0, 0.1)',*/}
+            {/*    zIndex: 1*/}
+            {/*}} />*/}
 
             <div
                 style={{
@@ -190,8 +190,8 @@ export default function Login() {
                     zIndex: 2,
                     width: '100%',
                     maxWidth: '400px',
-                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                    backdropFilter: 'blur(20px)',
+                    backgroundColor: 'rgba(255, 255, 255, 0)',
+                    backdropFilter: 'blur(18px)',
                     border: '1px solid rgba(255, 255, 255, 0.2)',
                     borderRadius: '20px',
                     boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
