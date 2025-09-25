@@ -156,7 +156,7 @@ export const updateSpecies = (id, data) => {
 
 // api.js
 export const getCagesByLocation = (location) => {
-    return api.get(`/cages/by-location/${location}`);
+    return api.get(`/cages/by-location/${location}/with-parrot-count`);
 }
 
 // list-with-parrot-count

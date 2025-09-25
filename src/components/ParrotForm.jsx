@@ -8,7 +8,8 @@ const ParrotForm = React.memo(({
                                    disableCageSelection = false,
                                    forceSpecies,
                                    speciesList = [],
-                                   cages = []
+                                   cages = [],
+                                   currentCage = null
                                }) => {
     const [form] = Form.useForm();
     const [speciesVisible, setSpeciesVisible] = useState(false);
@@ -77,13 +78,19 @@ const ParrotForm = React.memo(({
     };
 
     function renderCageDisplay() {
+        // 如果禁用笼子选择且有当前笼子，显示当前笼子信息
+        if (disableCageSelection && currentCage) {
+            const speciesName = speciesList.find(s => s.id === parseInt(currentCage.location))?.name || '未知';
+            return `${speciesName} - ${currentCage.cageCode}`;
+        }
+
         if (!cageValue[0]) return '请选择笼子';
 
         const cage = filteredCages.find(c => c.id === cageValue[0]);
         if (!cage) return '无效笼子';
 
         const speciesName = speciesList.find(s => s.id === parseInt(cage.location))?.name || '未知';
-        return `${speciesName}-${cage.cageCode}`;
+        return `${speciesName} - ${cage.cageCode}`;
     }
 
     const handleFinish = async (values) => {
@@ -196,7 +203,7 @@ const ParrotForm = React.memo(({
             >
                 <div style={disableCageSelection ? { color: '#999' } : {}}>
                     {renderCageDisplay()}
-                    {speciesValue[0] && filteredCages.length === 0 && ' (无可用笼子)'}
+                    {!disableCageSelection && speciesValue[0] && filteredCages.length === 0 && ' (无可用笼子)'}
                 </div>
 
                 {!disableCageSelection && (

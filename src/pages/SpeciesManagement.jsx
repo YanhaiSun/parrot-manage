@@ -7,12 +7,15 @@ import {
     SwipeAction,
     SpinLoading,
     ErrorBlock,
+    NavBar,
 } from 'antd-mobile';
 import { AddOutline } from 'antd-mobile-icons';
 import {getSpeciesList, createSpecies, deleteSpecies, updateSpecies} from '../api';
 import SpeciesForm from "../components/SpeciesForm.jsx";
+import { useNavigate } from 'react-router-dom';
 
 export default function SpeciesManagement() {
+    const navigate = useNavigate();
     const [speciesList, setSpeciesList] = useState([]);
     const [dialogVisible, setDialogVisible] = useState(false);
     const [editingSpecies, setEditingSpecies] = useState(null);
@@ -100,6 +103,17 @@ export default function SpeciesManagement() {
 
     return (
         <>
+            <NavBar
+                back='返回'
+                onBack={() => navigate(-1)}
+                style={{
+                    '--height': '50px',
+                    '--border-bottom': '1px solid #f0f0f0',
+                    backgroundColor: '#fff'
+                }}
+            >
+                品种设置
+            </NavBar>
             <List header="品种列表">
                 {speciesList.length === 0 ? (
                     <ErrorBlock status="empty" title={"还没有品种数据"} description={"快添加一个吧"} />

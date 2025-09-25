@@ -5,7 +5,8 @@ import {
     BellOutline,
     QuestionCircleOutline,
     RightOutline,
-    SetOutline
+    SetOutline,
+    UnorderedListOutline, UserContactOutline
 } from 'antd-mobile-icons';
 import { useAuth } from '../store/authStore.jsx';
 import { useNavigate } from 'react-router-dom';
@@ -33,9 +34,8 @@ export default function Profile() {
     };
 
     const menuItems = [
-        { icon: <BellOutline />, title: '账户设置', desc: '修改个人信息', onClick: () => Toast.show('功能开发中') },
-        { icon: <QuestionCircleOutline />, title: '帮助与反馈', desc: '常见问题、意见建议', onClick: () => Toast.show('功能开发中') },
-        { icon: <UserOutline />, title: '退出登录', desc: '安全退出当前账户', onClick: handleLogout, isDanger: false }
+        { icon: <UnorderedListOutline />, title: '品种设置', desc: '管理鹦鹉品种信息', onClick: () => navigate('/parrot-web/species') },
+        { icon: <UserContactOutline />, title: '退出登录', desc: '安全退出当前账户', onClick: handleLogout, isDanger: false }
     ];
 
     return (

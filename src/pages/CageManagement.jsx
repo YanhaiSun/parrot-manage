@@ -26,8 +26,10 @@ import {
     getCagesByLocation,
     searchCagesWithParrots
 } from '../api';
+import { useNavigate } from 'react-router-dom';
 
 export default function CageManagement() {
+    const navigate = useNavigate();
     const [data, setData] = useState({
         records: [],
         total: 0,
@@ -46,8 +48,58 @@ export default function CageManagement() {
     const [page, setPage] = useState(1);
     const pageSize = 50;
 
+    // 保存完整状态
+    const savePageState = () => {
+        const scrollPosition = window.pageYOffset || document.documentElement.scrollTop;
+        const state = {
+            scrollPosition,
+            data,
+            filteredCages,
+            page,
+            searchText,
+            selectedSpecies,
+            timestamp: Date.now()
+        };
+        sessionStorage.setItem('cageList_state', JSON.stringify(state));
+    };
+
+    const restorePageState = () => {
+        try {
+            const savedState = sessionStorage.getItem('cageList_state');
+            if (savedState) {
+                const state = JSON.parse(savedState);
+                // 检查状态是否过期（5分钟内有效）
+                if (Date.now() - state.timestamp < 5 * 60 * 1000) {
+                    setData(state.data);
+                    setFilteredCages(state.filteredCages);
+                    setPage(state.page);
+                    setSearchText(state.searchText || '');
+                    setSelectedSpecies(state.selectedSpecies || []);
+
+                    // 延迟恢复滚动位置
+                    setTimeout(() => {
+                        window.scrollTo(0, state.scrollPosition);
+                    }, 100);
+
+                    return true; // 表示成功恢复了状态
+                }
+                sessionStorage.removeItem('cageList_state');
+            }
+        } catch (error) {
+            console.error('恢复页面状态失败:', error);
+            sessionStorage.removeItem('cageList_state');
+        }
+        return false; // 表示没有恢复状态
+    };
+
     useEffect(() => {
-        fetchInitialData();
+        // 尝试恢复状态，如果没有保存的状态则加载数据
+        const restored = restorePageState();
+        if (!restored) {
+            fetchInitialData();
+        } else {
+            setLoading(false);
+        }
         fetchSpecies();
     }, []);
 
@@ -157,6 +209,8 @@ export default function CageManagement() {
             form.resetFields();
             setSpeciesValue([]);
             setShowForm(false);
+            // 清除保存的状态，因为数据已改变
+            sessionStorage.removeItem('cageList_state');
             const res = await getCages(1, pageSize);
             setData({
                 records: res.data.records,
@@ -180,6 +234,8 @@ export default function CageManagement() {
                 try {
                     await deleteCage(id);
                     Toast.show({ content: '删除成功' });
+                    // 清除保存的状态，因为数据已改变
+                    sessionStorage.removeItem('cageList_state');
                     const res = await getCages(page, pageSize);
                     setData({
                         records: res.data.records,
@@ -292,7 +348,8 @@ export default function CageManagement() {
                                             <div
                                                 onLongPress={() => handleDeleteCage(cage.id)}
                                                 onClick={() => {
-                                                    window.location.href = `/parrot-web/cage/${cage.id}/parrots`;
+                                                    savePageState();
+                                                    navigate(`/parrot-web/cage/${cage.id}/parrots`);
                                                 }}
                                                 style={{
                                                     touchAction: 'manipulation' // 改善移动端触摸体验
@@ -300,7 +357,8 @@ export default function CageManagement() {
                                             >
                                                 <Card
                                                     onClick={() => {
-                                                        window.location.href = `/parrot-web/cage/${cage.id}/parrots`;
+                                                        savePageState();
+                                                        navigate(`/parrot-web/cage/${cage.id}/parrots`);
                                                     }}
                                                     style={{
                                                         '--background-color': cage.parrotCount > 0 ? '#e6f7e6' : '#f0f0f0',

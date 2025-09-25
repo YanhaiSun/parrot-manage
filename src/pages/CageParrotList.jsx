@@ -9,9 +9,11 @@ import {
     Modal,
     SpinLoading,
     ErrorBlock,
+    Button,
+    Space,
 } from 'antd-mobile';
-import { useParams } from 'react-router-dom';
-import { AddOutline } from 'antd-mobile-icons';
+import { useParams, useNavigate } from 'react-router-dom';
+import { AddOutline, LeftOutline, RightOutline } from 'antd-mobile-icons';
 import {
     getParrotsByCageId,
     getSpeciesList,
@@ -19,17 +21,21 @@ import {
     updateParrot,
     deleteParrot,
     getCageById,
+    getCagesWithParrotCountAll,
 } from '../api';
 import ParrotForm from '../components/ParrotForm.jsx';
 
 export default function CageParrotList() {
     const { cageId } = useParams();
+    const navigate = useNavigate();
     const [parrots, setParrots] = useState([]);
     const [speciesList, setSpeciesList] = useState([]);
     const [showForm, setShowForm] = useState(false);
     const [editParrot, setEditParrot] = useState(null);
     const [loading, setLoading] = useState(true);
     const [currentCage, setCurrentCage] = useState(null);
+    const [allCages, setAllCages] = useState([]);
+    const [currentCageIndex, setCurrentCageIndex] = useState(-1);
 
     const closeForm = () => {
         setShowForm(false);
@@ -38,24 +44,47 @@ export default function CageParrotList() {
 
     useEffect(() => {
         fetchAllData();
+        // 清理掉已使用的状态，避免下次误用
+        const clearStateTimer = setTimeout(() => {
+            sessionStorage.removeItem('cageList_state');
+        }, 1000);
+
+        return () => clearTimeout(clearStateTimer);
     }, [cageId]);
 
     const fetchAllData = async () => {
         setLoading(true);
         try {
             // 并行获取所有数据
-            const [parrotsRes, speciesRes, cageRes] = await Promise.all([
+            const [parrotsRes, speciesRes, cageRes, allCagesRes] = await Promise.all([
                 getParrotsByCageId(cageId),
                 getSpeciesList(),
-                getCageById(cageId)
+                getCageById(cageId),
+                getCagesWithParrotCountAll()
             ]);
 
             // 设置状态
             setParrots(parrotsRes.data || []);
             setSpeciesList(speciesRes.data || []);
-
-            // 直接从 cageRes 获取笼子数据（不是 cages）
             setCurrentCage(cageRes.data);
+
+            // 设置所有笼子列表并找到当前笼子的索引
+            const cages = allCagesRes.data || [];
+            // 先按品种(location)排序，再按笼子编号(cageCode)排序
+            cages.sort((a, b) => {
+                // 首先按品种ID排序
+                const locationCompare = a.location - b.location;
+                if (locationCompare !== 0) {
+                    return locationCompare;
+                }
+                // 品种相同时，按笼子编号排序
+                return a.cageCode.localeCompare(b.cageCode, undefined, { numeric: true });
+            });
+            setAllCages(cages);
+
+            // 找到当前笼子在列表中的索引
+            const currentIndex = cages.findIndex(cage => cage.id === parseInt(cageId));
+            setCurrentCageIndex(currentIndex);
         } catch (error) {
             Toast.show({ content: '获取数据失败' });
             console.error('获取数据失败:', error);
@@ -109,6 +138,22 @@ export default function CageParrotList() {
         });
     };
 
+    // 导航到上一个笼子
+    const goToPreviousCage = () => {
+        if (currentCageIndex > 0) {
+            const previousCage = allCages[currentCageIndex - 1];
+            navigate(`/parrot-web/cage/${previousCage.id}/parrots`);
+        }
+    };
+
+    // 导航到下一个笼子
+    const goToNextCage = () => {
+        if (currentCageIndex < allCages.length - 1) {
+            const nextCage = allCages[currentCageIndex + 1];
+            navigate(`/parrot-web/cage/${nextCage.id}/parrots`);
+        }
+    };
+
     const renderDescription = (p) => {
         const speciesName = speciesList.find((s) => s.id === p.species)?.name || '未知';
         return `品种: ${speciesName}, 性别: ${p.gender}`;
@@ -116,7 +161,35 @@ export default function CageParrotList() {
 
     return (
         <>
-            <NavBar back="返回" onBack={() => window.history.back()}>
+            <NavBar
+                back="返回"
+                onBack={() => navigate('/parrot-web/cages')}
+                right={
+                    <Space>
+                        <Button
+                            size='small'
+                            fill='none'
+                            onClick={goToPreviousCage}
+                            disabled={currentCageIndex <= 0}
+                            style={{ padding: '0 8px' }}
+                        >
+                            <LeftOutline />
+                        </Button>
+                        <span style={{ fontSize: '12px', color: '#999' }}>
+                            {currentCageIndex + 1}/{allCages.length}
+                        </span>
+                        <Button
+                            size='small'
+                            fill='none'
+                            onClick={goToNextCage}
+                            disabled={currentCageIndex >= allCages.length - 1}
+                            style={{ padding: '0 8px' }}
+                        >
+                            <RightOutline />
+                        </Button>
+                    </Space>
+                }
+            >
                 {currentCage ?
                     `${speciesList.find(s => s.id === parseInt(currentCage.location))?.name || '未知'} - ${currentCage.cageCode}`
                     : '笼子详情'}
@@ -202,6 +275,9 @@ export default function CageParrotList() {
                             }}
                             disableCageSelection={!editParrot}
                             forceSpecies={!editParrot ? currentCage?.location : undefined}
+                            speciesList={speciesList}
+                            cages={allCages}
+                            currentCage={currentCage}
                         />
                     )
                 }

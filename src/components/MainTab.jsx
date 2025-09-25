@@ -5,11 +5,11 @@ import {
 import {useLocation, useNavigate, Routes, Route, Navigate} from 'react-router-dom'
 import ParrotPage from '../pages/ParrotManagement'
 import CagePage from '../pages/CageManagement'
-import SpeciesPage from "../pages/SpeciesManagement";
 import SearchPage from '../pages/SearchParrot'
 import CageParrotList from "../pages/CageParrotList.jsx";
 import ParrotStatistics from "../pages/ParrotStatistics.jsx";
 import Profile from "../pages/Profile.jsx";
+import SpeciesPage from "../pages/SpeciesManagement";
 import {useEffect, useState} from "react";
 
 const tabs = [
@@ -22,11 +22,6 @@ const tabs = [
         key: '/parrot-web/cages',
         title: '笼子',
         icon: <AppOutline/>,
-    },
-    {
-        key: '/parrot-web/species',
-        title: '品种',
-        icon: <UnorderedListOutline/>,
     },
     {
         key: '/parrot-web/search',
